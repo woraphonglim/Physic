@@ -2,73 +2,129 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Landbridge Simulator - Friction Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Landbridge Harbor - ลากเรือสินค้าขึ้นฝั่ง</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background-color: #87ceeb; font-family: 'Segoe UI', Tahoma, sans-serif; touch-action: none; }
+        :root {
+            --sand: #fbf3df;
+            --sand-line: #e6d5a8;
+            --navy: #0b3a55;
+            --teal: #0e8a94;
+            --teal-deep: #0a6470;
+            --coral: #e8664a;
+            --rope: #a87f45;
+            --ink: #23404f;
+        }
+        html, body { margin: 0; height: 100%; }
+        body { overflow: hidden; background-color: #f1d5b0; font-family: 'Sarabun', 'Segoe UI', Tahoma, sans-serif; touch-action: none; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        
+
         #ui-panel {
-            position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(255, 255, 255, 0.95);
-            padding: 20px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 340px;
-            backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8);
+            position: absolute; z-index: 10;
+            top: calc(16px + env(safe-area-inset-top, 0px));
+            left: calc(16px + env(safe-area-inset-left, 0px));
+            width: min(340px, calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)));
+            box-sizing: border-box;
+            background: rgba(251, 243, 223, 0.94);
+            padding: 0 0 16px 0; border-radius: 18px;
+            box-shadow: 0 12px 36px rgba(11, 58, 85, 0.35);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.85);
+            overflow: hidden;
         }
-        h2 { margin: 0 0 15px 0; color: #0f172a; font-size: 22px; border-bottom: 3px solid #38bdf8; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        .control-group { margin-bottom: 15px; }
-        label { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 8px; }
-        input[type=range] { width: 100%; accent-color: #0284c7; height: 6px; border-radius: 5px; outline: none; }
-        
-        .calc-box { background: #f8fafc; border-radius: 10px; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px; color: #334155; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-        .calc-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
-        .calc-total { font-weight: bold; color: #dc2626; border-top: 2px dashed #cbd5e1; padding-top: 8px; margin-top: 6px; }
-        
-        button {
-            width: 100%; padding: 16px; background: linear-gradient(135deg, #0284c7, #1d4ed8); color: white; border: none; border-radius: 10px;
-            font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 15px; touch-action: none;
-            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); text-transform: uppercase; transition: all 0.2s;
+        .panel-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            padding: 14px 16px 12px 16px; color: #fff;
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='10' viewBox='0 0 60 10'%3E%3Cpath d='M0 6 Q7.5 0 15 6 T30 6 T45 6 T60 6 V10 H0Z' fill='rgba(255,255,255,0.18)'/%3E%3C/svg%3E") repeat-x left bottom / 60px 10px,
+                linear-gradient(135deg, var(--navy), var(--teal-deep));
         }
-        button:active { transform: scale(0.96); box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4); }
-        .instruction { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(15, 23, 42, 0.8); color: white; padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: bold; pointer-events: none; letter-spacing: 0.5px; }
+        h2 { margin: 0; font-size: 19px; font-weight: 800; line-height: 1.2; }
+        h2 small { display: block; font-size: 12px; font-weight: 400; opacity: 0.85; margin-top: 2px; }
+        #togglePanel {
+            flex: none; width: 34px; height: 34px; padding: 0; margin: 0; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.5); background: rgba(255,255,255,0.15); color: #fff;
+            font-size: 18px; line-height: 1; cursor: pointer; box-shadow: none; text-transform: none; touch-action: manipulation;
+        }
+        #panel-body { padding: 14px 16px 0 16px; }
+        #ui-panel.collapsed #panel-body { display: none; }
+        .control-group { margin-bottom: 14px; }
+        label { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; color: var(--navy); margin-bottom: 6px; }
+        input[type=range] { width: 100%; accent-color: var(--teal); height: 6px; border-radius: 5px; outline: none; }
+
+        .calc-box { background: #fffaf0; border-radius: 10px; padding: 12px 14px; font-family: 'Courier New', monospace; font-size: 12px; color: var(--ink); border: 1px solid var(--sand-line); }
+        .calc-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .calc-total { font-weight: bold; color: #dc2626; border-top: 2px dashed var(--sand-line); padding-top: 8px; margin-top: 6px; }
+
+        #pullBtn {
+            display: block; width: calc(100% - 32px); margin: 14px 16px 0 16px; padding: 16px;
+            background: linear-gradient(135deg, var(--coral), #c9482f); color: white; border: none; border-radius: 12px;
+            font-family: inherit; font-weight: 800; font-size: 16px; cursor: pointer; touch-action: none;
+            box-shadow: 0 4px 14px rgba(201, 72, 47, 0.45), inset 0 -3px 0 rgba(0,0,0,0.15);
+            transition: transform 0.15s, box-shadow 0.15s; -webkit-user-select: none; user-select: none;
+        }
+        #pullBtn:active { transform: scale(0.97); box-shadow: 0 2px 6px rgba(201, 72, 47, 0.4), inset 0 -1px 0 rgba(0,0,0,0.15); }
+        .instruction {
+            position: absolute; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); z-index: 10;
+            background: rgba(11, 58, 85, 0.82); color: white; padding: 9px 18px; border-radius: 30px;
+            font-size: 13px; font-weight: 600; pointer-events: none; white-space: nowrap;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
     <div id="canvas-container"></div>
-    
+
     <div id="ui-panel">
-        <h2>Physics Engine v6 (Friction)</h2>
-        <div class="control-group">
-            <label>มวลเรือ (m) <span id="massVal">100 kg</span></label>
-            <input type="range" id="massSlider" min="50" max="2000" step="10" value="100">
+        <div class="panel-head">
+            <h2>⚓ ท่าเรือชายฝั่ง<small>ลากเรือสินค้าขึ้นสลิปเวย์ · Physics Engine v6 (Friction)</small></h2>
+            <button id="togglePanel" aria-label="ย่อหรือขยายแผงควบคุม">–</button>
         </div>
-        <div class="control-group">
-            <label>แรงดึงเพลา (F) <span id="forceVal">0 N</span></label>
-            <input type="range" id="forceSlider" min="0" max="150" step="1" value="0">
-        </div>
-        
-        <div class="calc-box">
-            <div class="calc-row"><span>T เพลา (4F):</span> <span id="c_t1">0 N</span></div>
-            <div class="calc-row"><span>T_pull (x64):</span> <span id="c_tpull" style="font-weight:bold;">0 N</span></div>
-            <div class="calc-row"><span>W (mg sin30):</span> <span id="c_w">490 N</span></div>
-            <div class="calc-row"><span>f เสียดทาน (μ=0.5):</span> <span id="c_f" style="color:#d97706;">424 N</span></div>
-            <div class="calc-row"><span>ความเร่ง (a):</span> <span id="c_acc">0.0 m/s²</span></div>
-            <div class="calc-row calc-total" style="color:#0f172a;"><span>สถานะ:</span> <span id="c_status">ปล่อยอิสระ</span></div>
+        <div id="panel-body">
+            <div class="control-group">
+                <label>มวลเรือ (m) <span id="massVal">100 kg</span></label>
+                <input type="range" id="massSlider" min="50" max="2000" step="10" value="100">
+            </div>
+            <div class="control-group">
+                <label>แรงดึงเพลา (F) <span id="forceVal">0 N</span></label>
+                <input type="range" id="forceSlider" min="0" max="150" step="1" value="0">
+            </div>
+
+            <div class="calc-box">
+                <div class="calc-row"><span>T เพลา (4F):</span> <span id="c_t1">0 N</span></div>
+                <div class="calc-row"><span>T_pull (x64):</span> <span id="c_tpull" style="font-weight:bold;">0 N</span></div>
+                <div class="calc-row"><span>W (mg sin30):</span> <span id="c_w">490 N</span></div>
+                <div class="calc-row"><span>f เสียดทาน (μ=0.5):</span> <span id="c_f" style="color:#d97706;">424 N</span></div>
+                <div class="calc-row"><span>ความเร่ง (a):</span> <span id="c_acc">0.0 m/s²</span></div>
+                <div class="calc-row calc-total" style="color:#0f172a;"><span>สถานะ:</span> <span id="c_status">ปล่อยอิสระ</span></div>
+            </div>
         </div>
         <button id="pullBtn">กดค้างเพื่อดึงเชือก</button>
     </div>
-    
+
     <div class="instruction">👈 ลากนิ้วหมุนกล้อง | 🤏 กางนิ้วซูม</div>
 
     <script>
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb); 
-        scene.fog = new THREE.FogExp2(0x87ceeb, 0.002);
+        // ============================================================
+        //  พื้นฐาน: ฉาก, กล้อง, เรนเดอร์
+        // ============================================================
+        function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+        const rand = mulberry32(20260929);
+        const clamp = THREE.MathUtils.clamp;
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const HORIZON = 0xf1d5b0;
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(HORIZON, 0.0012);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 6000);
         camera.position.set(-50, 30, 90);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -77,108 +133,757 @@
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.target.set(15, 15, 0);
         controls.enableDamping = true;
-        controls.maxPolarAngle = Math.PI / 2 + 0.1; 
+        controls.minDistance = 25;
+        controls.maxDistance = 350;
+        controls.maxPolarAngle = Math.PI / 2 - 0.03;
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
-        
-        const sunLight = new THREE.DirectionalLight(0xfff7d6, 1.5);
-        sunLight.position.set(80, 150, 50);
+        // ============================================================
+        //  ท้องฟ้ายามบ่ายแก่ + ดวงอาทิตย์
+        // ============================================================
+        const sunDir = new THREE.Vector3(140, 110, -60).normalize();
+        const skyMat = new THREE.ShaderMaterial({
+            side: THREE.BackSide, depthWrite: false, fog: false,
+            uniforms: {
+                sunDir: { value: sunDir },
+                cTop: { value: new THREE.Color(0x2f7cc4) },
+                cMid: { value: new THREE.Color(0x8ecdf0) },
+                cHor: { value: new THREE.Color(0xf6d9ae) }
+            },
+            vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+            fragmentShader: `varying vec3 vP; uniform vec3 sunDir; uniform vec3 cTop; uniform vec3 cMid; uniform vec3 cHor;
+                void main(){
+                    float h = clamp(vP.y, 0.0, 1.0);
+                    vec3 c = mix(cHor, cMid, smoothstep(0.0, 0.22, h));
+                    c = mix(c, cTop, smoothstep(0.18, 0.85, h));
+                    float s = max(dot(normalize(vP), sunDir), 0.0);
+                    c += vec3(1.0, 0.75, 0.4) * pow(s, 6.0) * 0.35 + vec3(1.0, 0.9, 0.7) * pow(s, 64.0) * 0.8;
+                    gl_FragColor = vec4(c, 1.0);
+                }`
+        });
+        const sky = new THREE.Mesh(new THREE.SphereGeometry(3000, 32, 16), skyMat);
+        sky.renderOrder = -10;
+        scene.add(sky);
+
+        function radialTex(inner, outer) {
+            const c = document.createElement('canvas'); c.width = c.height = 128;
+            const g = c.getContext('2d');
+            const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gr.addColorStop(0, inner); gr.addColorStop(0.25, inner); gr.addColorStop(1, outer);
+            g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+            return new THREE.CanvasTexture(c);
+        }
+        const sunSprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: radialTex('rgba(255,250,225,1)', 'rgba(255,190,110,0)'),
+            transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending
+        }));
+        sunSprite.scale.set(650, 650, 1);
+        scene.add(sunSprite);
+
+        // ============================================================
+        //  แสง
+        // ============================================================
+        scene.add(new THREE.HemisphereLight(0xcfe8ff, 0xe0c391, 0.8));
+
+        const sunLight = new THREE.DirectionalLight(0xffe2b5, 1.35);
+        sunLight.position.copy(sunDir).multiplyScalar(250);
         sunLight.castShadow = true;
-        sunLight.shadow.mapSize.width = 4096;
-        sunLight.shadow.mapSize.height = 4096;
+        sunLight.shadow.mapSize.set(2048, 2048);
         sunLight.shadow.camera.near = 10;
-        sunLight.shadow.camera.far = 400;
-        sunLight.shadow.camera.left = -80;
-        sunLight.shadow.camera.right = 80;
-        sunLight.shadow.camera.top = 80;
-        sunLight.shadow.camera.bottom = -80;
+        sunLight.shadow.camera.far = 600;
+        sunLight.shadow.camera.left = -130; sunLight.shadow.camera.right = 130;
+        sunLight.shadow.camera.top = 130; sunLight.shadow.camera.bottom = -130;
+        sunLight.shadow.bias = -0.0006;
         scene.add(sunLight);
 
-        const sunSphere = new THREE.Mesh(new THREE.SphereGeometry(8, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffdd44 }));
-        sunSphere.position.copy(sunLight.position);
-        scene.add(sunSphere);
+        const fillLight = new THREE.DirectionalLight(0xbfd9ff, 0.45);
+        fillLight.position.set(-80, 60, 150);
+        scene.add(fillLight);
+
+        // ============================================================
+        //  ผิววัสดุ (วาดเองด้วย canvas)
+        // ============================================================
+        function canvasTex(w, h, draw) {
+            const c = document.createElement('canvas'); c.width = w; c.height = h;
+            draw(c.getContext('2d'), w, h);
+            const t = new THREE.CanvasTexture(c);
+            t.wrapS = t.wrapT = THREE.RepeatWrapping;
+            t.anisotropy = 4;
+            return t;
+        }
+
+        // กำแพงหินท่าเรือ (มีตะไคร่น้ำที่ขอบล่าง)
+        const wallBase = canvasTex(256, 128, (g, w, h) => {
+            g.fillStyle = '#5b6570'; g.fillRect(0, 0, w, h);
+            for (let r = 0; r < 4; r++) {
+                const off = (r % 2) * 32;
+                for (let c = -1; c < 5; c++) {
+                    const l = 118 + Math.floor(rand() * 40);
+                    g.fillStyle = `rgb(${l},${l + 6},${l + 14})`;
+                    g.fillRect(c * 64 + off + 2, r * 32 + 2, 60, 28);
+                }
+            }
+            const gr = g.createLinearGradient(0, h * 0.55, 0, h);
+            gr.addColorStop(0, 'rgba(60,110,70,0)'); gr.addColorStop(1, 'rgba(36,88,72,0.8)');
+            g.fillStyle = gr; g.fillRect(0, 0, w, h);
+        });
+        function wallMat(widthUnits) {
+            const t = wallBase.clone(); t.needsUpdate = true; t.repeat.set(widthUnits / 8, 1);
+            return new THREE.MeshStandardMaterial({ map: t, roughness: 0.95 });
+        }
+
+        // พื้นไม้ท่าเรือ
+        const plankBase = canvasTex(256, 256, (g, w, h) => {
+            for (let i = 0; i < 8; i++) {
+                const l = 90 + Math.floor(rand() * 35);
+                g.fillStyle = `rgb(${l + 40},${l + 14},${l - 22})`; g.fillRect(i * 32, 0, 32, h);
+                g.fillStyle = 'rgba(30,15,5,0.65)'; g.fillRect(i * 32, 0, 2, h);
+                for (let k = 0; k < 10; k++) {
+                    g.fillStyle = 'rgba(50,25,10,0.15)';
+                    g.fillRect(i * 32 + 4 + rand() * 22, rand() * h, 1.5, 20 + rand() * 60);
+                }
+                g.fillStyle = 'rgba(30,15,5,0.55)'; g.fillRect(i * 32, Math.floor(rand() * 4) * 64 + 20, 32, 2);
+            }
+        });
+
+        // คอนกรีตสลิปเวย์
+        const concBase = canvasTex(256, 256, (g, w, h) => {
+            g.fillStyle = '#9aa4ae'; g.fillRect(0, 0, w, h);
+            for (let i = 0; i < 1400; i++) {
+                const l = 130 + Math.floor(rand() * 60);
+                g.fillStyle = `rgba(${l},${l + 4},${l + 8},0.5)`; g.fillRect(rand() * w, rand() * h, 2, 2);
+            }
+            g.fillStyle = 'rgba(40,50,60,0.45)';
+            for (let y = 0; y < h; y += 64) g.fillRect(0, y, w, 2);
+            g.fillRect(0, 0, 2, h);
+        });
+
+        // ตู้คอนเทนเนอร์ (ลอนเหล็ก)
+        const corrTex = canvasTex(128, 64, (g, w, h) => {
+            g.fillStyle = '#e5e7eb'; g.fillRect(0, 0, w, h);
+            for (let x = 0; x < w; x += 8) { g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(x, 0, 3, h); g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x + 4, 0, 2, h); }
+            g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillRect(0, 0, w, 3); g.fillRect(0, h - 3, w, 3);
+        });
+        function containerMat(color) { return new THREE.MeshStandardMaterial({ color, map: corrTex, roughness: 0.65, metalness: 0.15 }); }
+
+        // ============================================================
+        //  ภูมิประเทศ: ชายหาด เนินทราย ทิวเขา
+        // ============================================================
+        function shoreZ(x) { return -20 + 14 * Math.sin(x * 0.025 + 1); }
+        function terrainH(x, z) {
+            const s = shoreZ(x) - z;
+            let h;
+            if (s < 0) h = -2.5 + s * 0.08;
+            else {
+                const t = clamp((s - 60) / 140, 0, 1);
+                h = -2.5 + 9 * (1 - Math.exp(-s / 45)) + 12 * t * t * (3 - 2 * t);
+            }
+            const k = clamp(s / 40, 0, 1);
+            h += k * (Math.sin(x * 0.07 + z * 0.05) * 0.7 + Math.sin(x * 0.13 - z * 0.09) * 0.45);
+            return h;
+        }
+        function waterlineZ(x) {
+            let lo = shoreZ(x), hi = shoreZ(x) - 80;
+            for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (terrainH(x, mid) < 0) lo = mid; else hi = mid; }
+            return (lo + hi) / 2;
+        }
+
+        const tGeo = new THREE.PlaneGeometry(1200, 460, 240, 92);
+        {
+            const tp = tGeo.attributes.position;
+            const tc = new Float32Array(tp.count * 3);
+            const sandC = new THREE.Color(0xf0dba8), wetC = new THREE.Color(0xcdb07f);
+            const grassC = new THREE.Color(0x6a9a45), dryC = new THREE.Color(0x9aa85a), c = new THREE.Color();
+            for (let i = 0; i < tp.count; i++) {
+                const x = tp.getX(i), y = tp.getY(i), wz = -200 - y;
+                const h = terrainH(x, wz);
+                tp.setZ(i, h);
+                c.copy(sandC);
+                if (h < 0.8) c.lerp(wetC, clamp((0.8 - h) / 2.5, 0, 1));
+                const noise = 0.5 + 0.5 * Math.sin(x * 0.11) * Math.sin(wz * 0.13);
+                c.lerp(dryC, clamp((h - 5.5) / 6, 0, 1) * 0.6 * noise);
+                c.lerp(grassC, clamp((h - 8) / 7, 0, 1) * 0.85);
+                tc[i * 3] = c.r; tc[i * 3 + 1] = c.g; tc[i * 3 + 2] = c.b;
+            }
+            tGeo.setAttribute('color', new THREE.BufferAttribute(tc, 3));
+            tGeo.computeVertexNormals();
+        }
+        const terrain = new THREE.Mesh(tGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }));
+        terrain.rotation.x = -Math.PI / 2;
+        terrain.position.z = -200;
+        terrain.receiveShadow = true;
+        scene.add(terrain);
+
+        // ทิวเขาไกลๆ
+        const mtnMat = new THREE.MeshStandardMaterial({ color: 0x5f8a78, roughness: 1, flatShading: true });
+        for (let i = 0; i < 11; i++) {
+            const hgt = 55 + rand() * 60, r = 70 + rand() * 60;
+            const m = new THREE.Mesh(new THREE.ConeGeometry(r, hgt, 7), mtnMat);
+            m.scale.x = 1.8;
+            m.position.set(-600 + i * 120 + rand() * 60, 12 + hgt / 2, -380 - rand() * 70);
+            m.rotation.y = rand() * 3;
+            scene.add(m);
+        }
+
+        // ============================================================
+        //  ทะเล (คลื่นเคลื่อนไหว สีน้ำตื้น/ลึกตามความลึก)
+        // ============================================================
+        function waveH(x, z, t) { return Math.sin(x * 0.05 + t) * 0.7 + Math.cos(z * 0.05 - t) * 0.7; }
 
         const seaGeo = new THREE.PlaneGeometry(1000, 1000, 128, 128);
-        const seaMat = new THREE.MeshStandardMaterial({ 
-            color: 0x005b96, transparent: true, opacity: 0.85, 
-            roughness: 0.1, metalness: 0.9, flatShading: true 
+        {
+            const sp = seaGeo.attributes.position;
+            const col = new Float32Array(sp.count * 3);
+            const cDeep = new THREE.Color(0x0b5d92), cShal = new THREE.Color(0x46d6c8), tmp = new THREE.Color();
+            for (let i = 0; i < sp.count; i++) {
+                const depth = -terrainH(sp.getX(i), -sp.getY(i));
+                let f = clamp(1 - depth / 10, 0, 1);
+                f = f * f * (3 - 2 * f);
+                tmp.copy(cDeep).lerp(cShal, f);
+                col[i * 3] = tmp.r; col[i * 3 + 1] = tmp.g; col[i * 3 + 2] = tmp.b;
+            }
+            seaGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+        }
+        const seaMat = new THREE.MeshStandardMaterial({
+            vertexColors: true, transparent: true, opacity: 0.86,
+            roughness: 0.2, metalness: 0.35, flatShading: true
         });
         const sea = new THREE.Mesh(seaGeo, seaMat);
         sea.rotation.x = -Math.PI / 2;
+        sea.receiveShadow = true;
+        sea.renderOrder = 1;
         scene.add(sea);
 
-        const pier = new THREE.Mesh(new THREE.BoxGeometry(120, 6, 50), new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 }));
+        const farSea = new THREE.Mesh(new THREE.PlaneGeometry(8000, 8000), new THREE.MeshBasicMaterial({ color: 0x2d7fae }));
+        farSea.rotation.x = -Math.PI / 2;
+        farSea.position.y = -2;
+        scene.add(farSea);
+
+        // ============================================================
+        //  ท่าเรือ (ท่าเทียบเรือหิน + พื้นไม้)  และฐานสลิปเวย์
+        // ============================================================
+        const angle = 30 * Math.PI / 180;
+        const iLen = 60;
+        const iHeight = iLen * Math.sin(angle);
+        const iBase = iLen * Math.cos(angle);
+
+        const plankT = plankBase.clone(); plankT.needsUpdate = true; plankT.repeat.set(15, 6.25);
+        const plankMat = new THREE.MeshStandardMaterial({ map: plankT, roughness: 0.9 });
+        const pier = new THREE.Mesh(new THREE.BoxGeometry(120, 6, 50),
+            [wallMat(50), wallMat(50), plankMat, wallMat(120), wallMat(120), wallMat(120)]);
         pier.position.set(0, 3, -25);
-        pier.receiveShadow = true;
+        pier.receiveShadow = true; pier.castShadow = true;
         scene.add(pier);
 
-        const rockMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 1, flatShading: true });
-        for(let i=0; i<30; i++) {
-            const size = Math.random() * 4 + 2;
-            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(size), rockMat);
-            rock.position.set((Math.random() - 0.5) * 140, size/2, -10 + Math.random() * 30);
-            rock.rotation.set(Math.random(), Math.random(), Math.random());
-            rock.castShadow = true; rock.receiveShadow = true;
-            scene.add(rock);
-        }
+        const concT = concBase.clone(); concT.needsUpdate = true; concT.repeat.set(0.1, 0.1);
+        const concMat = new THREE.MeshStandardMaterial({ map: concT, roughness: 0.85 });
 
-        const birds = new THREE.Group();
-        const birdGeo = new THREE.ConeGeometry(0.4, 1.5, 4);
-        birdGeo.rotateX(Math.PI/2);
-        const birdMat = new THREE.MeshBasicMaterial({color: 0x222222});
-        for(let i=0; i<6; i++) {
-            const bird = new THREE.Mesh(birdGeo, birdMat);
-            bird.position.set((Math.random()-0.5)*100, 45 + Math.random()*20, (Math.random()-0.5)*50 - 20);
-            birds.add(bird);
-        }
-        scene.add(birds);
+        const slipBase = new THREE.Mesh(new THREE.BoxGeometry(iBase, 6, 17),
+            [wallMat(17), wallMat(17), concMat, concMat, wallMat(iBase), wallMat(iBase)]);
+        slipBase.position.set(-iBase / 2, 3, 0);
+        slipBase.receiveShadow = true; slipBase.castShadow = true;
+        scene.add(slipBase);
 
-        const angle = 30 * Math.PI / 180;
-        const iLen = 60; 
-        const iHeight = iLen * Math.sin(angle); 
-        const iBase = iLen * Math.cos(angle);   
-
+        // ทางลาด (ขนาดและตำแหน่งเดิม)
         const shape = new THREE.Shape();
         shape.moveTo(0, 0); shape.lineTo(-iBase, 0); shape.lineTo(0, iHeight); shape.lineTo(0, 0);
-        const incline = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 16, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.5 }), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 }));
-        incline.position.set(0, 6, -8); 
-        incline.receiveShadow = true;
+        const incline = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 16, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.5 }), concMat);
+        incline.position.set(0, 6, -8);
+        incline.receiveShadow = true; incline.castShadow = true;
         scene.add(incline);
 
+        // ไม้หมอนและรางเหล็กบนสลิปเวย์
+        {
+            const nx = -Math.sin(angle), ny = Math.cos(angle);
+            const sleeperMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2b, roughness: 0.95 });
+            const sleeperGeo = new THREE.BoxGeometry(0.9, 0.16, 15.6);
+            for (let u = 1.5; u < iLen - 0.5; u += 2.4) {
+                const m = new THREE.Mesh(sleeperGeo, sleeperMat);
+                m.position.set(-iBase + u * Math.cos(angle) + nx * 0.06, 6 + u * Math.sin(angle) + ny * 0.06, 0);
+                m.rotation.z = angle; m.receiveShadow = true;
+                scene.add(m);
+            }
+            const railMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.8, roughness: 0.35 });
+            [-6.4, 6.4].forEach(zz => {
+                const r = new THREE.Mesh(new THREE.BoxGeometry(iLen, 0.3, 0.6), railMat);
+                r.position.set(-iBase / 2 + nx * 0.22, 6 + iHeight / 2 + ny * 0.22, zz);
+                r.rotation.z = angle; r.castShadow = true;
+                scene.add(r);
+            });
+        }
+
+        // เส้นเหลืองขอบท่า + หลักผูกเรือ + เสาไฟ
+        {
+            const yel = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.8 });
+            [[0.8, 60], [-60, -53.8]].forEach(([a, b]) => {
+                const s = new THREE.Mesh(new THREE.BoxGeometry(b - a, 0.06, 0.5), yel);
+                s.position.set((a + b) / 2, 6.03, -1.3);
+                scene.add(s);
+            });
+            const bolMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.6, metalness: 0.4 });
+            [12, 20, 28, 44, 52, -56].forEach(x => {
+                const b = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.62, 1.2, 12), bolMat);
+                b.position.set(x, 6.6, -2.4); b.castShadow = true; scene.add(b);
+                const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.5, 0.35, 12), bolMat);
+                cap.position.set(x, 7.35, -2.4); scene.add(cap);
+            });
+            const postMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.5, roughness: 0.5 });
+            const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfff1b8 });
+            [20, 34, 48, -56].forEach(x => {
+                const p = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.22, 7, 8), postMat);
+                p.position.set(x, 9.5, -4.6); p.castShadow = true; scene.add(p);
+                const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), bulbMat);
+                bulb.position.set(x, 13.2, -4.6); scene.add(bulb);
+            });
+        }
+
+        // ตู้คอนเทนเนอร์ที่กองรอบนท่า
+        {
+            const cGeo = new THREE.BoxGeometry(6, 2.6, 2.4);
+            const cols = [0x1d4ed8, 0x047857, 0xd97706, 0x7e22ce, 0xb91c1c, 0x0e7490];
+            const stacks = [
+                [14, -26, 3], [14, -29, 2], [20.4, -26, 2], [20.4, -29, 3], [26.8, -27.5, 1],
+                [44, -22, 2], [44, -25, 1], [50.4, -22, 1]
+            ];
+            stacks.forEach(([x, z, n]) => {
+                for (let i = 0; i < n; i++) {
+                    const m = new THREE.Mesh(cGeo, containerMat(cols[Math.floor(rand() * cols.length)]));
+                    m.position.set(x, 6 + 1.3 + i * 2.6, z);
+                    m.rotation.y = (rand() - 0.5) * 0.05;
+                    m.castShadow = true; m.receiveShadow = true;
+                    scene.add(m);
+                }
+            });
+            // ถังน้ำมัน
+            const barrelMat = new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.5, metalness: 0.4 });
+            [[24, -9], [25.6, -9.6], [24.8, -11], [30, -8]].forEach(([x, z]) => {
+                const b = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 1.6, 14), barrelMat);
+                b.position.set(x, 6.8, z); b.castShadow = true; scene.add(b);
+            });
+            // โกดัง
+            const wh = new THREE.Mesh(new THREE.BoxGeometry(18, 7, 12), new THREE.MeshStandardMaterial({ color: 0xe8dcc0, roughness: 0.9 }));
+            wh.position.set(38, 9.5, -40); wh.castShadow = true; wh.receiveShadow = true; scene.add(wh);
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(19.6, 0.6, 13.4), new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.8 }));
+            roof.position.set(38, 13.3, -40); roof.castShadow = true; scene.add(roof);
+            const door = new THREE.Mesh(new THREE.BoxGeometry(5, 4.4, 0.2), new THREE.MeshStandardMaterial({ color: 0x0e7490, roughness: 0.6 }));
+            door.position.set(38, 8.2, -33.95); scene.add(door);
+        }
+
+        // ============================================================
+        //  เครนท่าเรือ
+        // ============================================================
+        const craneHook = new THREE.Group();
+        {
+            const crane = new THREE.Group();
+            crane.position.set(-38, 6, -30);
+            const yel = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.6, metalness: 0.3 });
+            const legGeo = new THREE.BoxGeometry(1.2, 26, 1.2);
+            [[-7, -5], [7, -5], [-7, 5], [7, 5]].forEach(([x, z]) => {
+                const l = new THREE.Mesh(legGeo, yel); l.position.set(x, 13, z); l.castShadow = true; crane.add(l);
+            });
+            [-5, 5].forEach(z => { const b = new THREE.Mesh(new THREE.BoxGeometry(16, 1.5, 1.5), yel); b.position.set(0, 26, z); b.castShadow = true; crane.add(b); });
+            [-7, 7].forEach(x => { const b = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, 12), yel); b.position.set(x, 26, 0); b.castShadow = true; crane.add(b); });
+            const boom = new THREE.Mesh(new THREE.BoxGeometry(2.2, 2.2, 36), yel); boom.position.set(0, 28, 10); boom.castShadow = true; crane.add(boom);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 3.4), new THREE.MeshStandardMaterial({ color: 0xf8fafc })); cab.position.set(2.6, 27.6, -3); crane.add(cab);
+
+            craneHook.position.set(0, 27, 22);
+            const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 12, 6), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+            cable.position.y = -6; craneHook.add(cable);
+            const hookBlock = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.2, 1.6), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+            hookBlock.position.y = -12.4; craneHook.add(hookBlock);
+            const hung = new THREE.Mesh(new THREE.BoxGeometry(6, 2.6, 2.4), containerMat(0xdc2626));
+            hung.position.y = -14.6; hung.castShadow = true; craneHook.add(hung);
+            crane.add(craneHook);
+            scene.add(crane);
+        }
+
+        // ============================================================
+        //  ประภาคาร
+        // ============================================================
+        const lightBeam = new THREE.Group();
+        {
+            const g = new THREE.Group();
+            g.position.set(52, 6, -14);
+            const plinth = new THREE.Mesh(new THREE.BoxGeometry(11, 1.5, 11), new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 }));
+            plinth.position.y = 0.75; g.add(plinth);
+            const stripe = [0xffffff, 0xdc2626, 0xffffff, 0xdc2626, 0xffffff];
+            for (let i = 0; i < 5; i++) {
+                const r0 = 4.2 - 1.6 * (i * 7 / 35), r1 = 4.2 - 1.6 * ((i + 1) * 7 / 35);
+                const seg = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, 7, 20), new THREE.MeshStandardMaterial({ color: stripe[i], roughness: 0.8 }));
+                seg.position.y = 1.5 + i * 7 + 3.5; seg.castShadow = true; g.add(seg);
+            }
+            const gallery = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.6, 0.5, 20), new THREE.MeshStandardMaterial({ color: 0x1f2937 }));
+            gallery.position.y = 36.8; g.add(gallery);
+            const lantern = new THREE.Mesh(new THREE.CylinderGeometry(1.9, 1.9, 3.6, 16), new THREE.MeshStandardMaterial({ color: 0xfff2b0, emissive: 0xffd966, emissiveIntensity: 0.9 }));
+            lantern.position.y = 38.9; g.add(lantern);
+            const cap = new THREE.Mesh(new THREE.ConeGeometry(2.7, 3, 16), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+            cap.position.y = 42.2; cap.castShadow = true; g.add(cap);
+
+            lightBeam.position.y = 38.9;
+            const beamMat = new THREE.MeshBasicMaterial({ color: 0xfff1b8, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+            const beamGeo = new THREE.ConeGeometry(4, 40, 16, 1, true);
+            beamGeo.rotateZ(Math.PI / 2); beamGeo.translate(20, 0, 0);
+            const b1 = new THREE.Mesh(beamGeo, beamMat);
+            const b2 = new THREE.Mesh(beamGeo, beamMat); b2.rotation.y = Math.PI;
+            lightBeam.add(b1, b2);
+            g.add(lightBeam);
+            scene.add(g);
+        }
+
+        // ============================================================
+        //  ปาล์มมะพร้าว
+        // ============================================================
+        const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8b6a45, roughness: 1 });
+        const frondMat = new THREE.MeshStandardMaterial({ color: 0x2f9e44, roughness: 0.8 });
+        const frondMat2 = new THREE.MeshStandardMaterial({ color: 0x3fb950, roughness: 0.8 });
+        const nutMat = new THREE.MeshStandardMaterial({ color: 0x5b3a1e, roughness: 0.9 });
+        const frondGeo = new THREE.ConeGeometry(0.9, 6, 4);
+        frondGeo.scale(0.15, 1, 1); frondGeo.translate(0, 3, 0);
+        const nutGeo = new THREE.SphereGeometry(0.4, 8, 8);
+
+        function makePalm(x, y, z, sc) {
+            const g = new THREE.Group();
+            g.position.set(x, y - 0.3, z); g.scale.setScalar(sc);
+            const lean = 0.25 + rand() * 0.5, dir = rand() * Math.PI * 2, H = 9 + rand() * 3;
+            const pts = [];
+            for (let i = 0; i <= 4; i++) {
+                const t = i / 4;
+                pts.push(new THREE.Vector3(Math.cos(dir) * lean * t * t * H * 0.6, t * H, Math.sin(dir) * lean * t * t * H * 0.6));
+            }
+            const trunk = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 8, 0.45, 6, false), trunkMat);
+            trunk.castShadow = true; g.add(trunk);
+            const crown = new THREE.Group(); crown.position.copy(pts[4]); g.add(crown);
+            for (let i = 0; i < 8; i++) {
+                const holder = new THREE.Group();
+                holder.rotation.y = (i / 8) * Math.PI * 2 + rand() * 0.3;
+                const f = new THREE.Mesh(frondGeo, i % 2 ? frondMat : frondMat2);
+                f.rotation.z = -(1.35 + rand() * 0.4);
+                holder.add(f); crown.add(holder);
+            }
+            for (let i = 0; i < 3; i++) {
+                const n = new THREE.Mesh(nutGeo, nutMat);
+                n.position.set((rand() - 0.5) * 0.9, -0.3, (rand() - 0.5) * 0.9); crown.add(n);
+            }
+            scene.add(g);
+            return g;
+        }
+
+        // ปาล์มตามชายหาด (เว้นพื้นที่ท่าเรือ)
+        {
+            let placed = 0, tries = 0;
+            while (placed < 22 && tries < 600) {
+                tries++;
+                const x = (rand() - 0.5) * 460;
+                const wz = -20 - rand() * 150;
+                const s = shoreZ(x) - wz;
+                if (s < 20 || s > 60) continue;
+                if (Math.abs(x) < 70 && wz > -65) continue;
+                makePalm(x, terrainH(x, wz), wz, 0.9 + rand() * 0.5);
+                placed++;
+            }
+        }
+
+        // ============================================================
+        //  ของตกแต่งชายหาด: กระท่อม ร่มชายหาด โขดหิน
+        // ============================================================
+        function beachPos(x, sOff) { const z = shoreZ(x) - sOff; return [x, terrainH(x, z), z]; }
+
+        function makeHut(x, y, z, rotY, col) {
+            const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = rotY;
+            const body = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 4), new THREE.MeshStandardMaterial({ color: col, roughness: 0.9 }));
+            body.position.y = 1.5; body.castShadow = true; body.receiveShadow = true; g.add(body);
+            const roofM = new THREE.Mesh(new THREE.ConeGeometry(4.3, 2.4, 4), new THREE.MeshStandardMaterial({ color: 0xc9a15b, roughness: 1 }));
+            roofM.scale.set(1.2, 1, 1); roofM.rotation.y = Math.PI / 4; roofM.position.y = 4.2; roofM.castShadow = true; g.add(roofM);
+            const dr = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 0.1), new THREE.MeshStandardMaterial({ color: 0x3b2a14 }));
+            dr.position.set(0, 1, 2.03); g.add(dr);
+            scene.add(g);
+        }
+        function makeUmbrella(x, y, z, col) {
+            const g = new THREE.Group(); g.position.set(x, y, z);
+            const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.4, 6), new THREE.MeshStandardMaterial({ color: 0xf1f5f9 }));
+            p.position.y = 1.7; g.add(p);
+            const c = new THREE.Mesh(new THREE.ConeGeometry(2.1, 0.9, 10), new THREE.MeshStandardMaterial({ color: col, roughness: 0.8 }));
+            c.position.y = 3.6; c.castShadow = true; g.add(c);
+            const towel = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.05, 3), new THREE.MeshStandardMaterial({ color: col === 0xef4444 ? 0xffffff : 0xfde68a }));
+            towel.position.set(1.7, 0.03, 0.5); g.add(towel);
+            scene.add(g);
+        }
+        [[-120, 28, 0.4], [-88, 30, 1.2], [96, 26, 0.3], [122, 30, 2.0]].forEach(([x, s, r], i) => {
+            const [px, py, pz] = beachPos(x, s);
+            makeHut(px, py, pz, r, i % 2 ? 0xf8fafc : 0x7dd3fc);
+        });
+        [[-108, 20, 0xef4444], [-100, 22, 0x38bdf8], [-96, 19, 0xfacc15], [86, 20, 0xef4444], [104, 21, 0xfacc15], [112, 19, 0x38bdf8]].forEach(([x, s, col]) => {
+            const [px, py, pz] = beachPos(x, s);
+            makeUmbrella(px, py, pz, col);
+        });
+
+        // โขดหินกันคลื่นข้างท่าเรือ
+        {
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x5b6472, roughness: 1, flatShading: true });
+            for (let i = 0; i < 34; i++) {
+                const side = rand() < 0.5 ? -1 : 1;
+                const x = side * (61 + rand() * 10), z = -47 + rand() * 54;
+                const size = 1.6 + rand() * 2.4;
+                const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(size), rockMat);
+                rock.position.set(x, Math.max(terrainH(x, z), -1) + size * 0.3, z);
+                rock.rotation.set(rand(), rand(), rand());
+                rock.castShadow = true; rock.receiveShadow = true;
+                scene.add(rock);
+            }
+        }
+
+        // เกาะเล็กๆ
+        function makeIsland(x, z, r, palms) {
+            const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.6, r, 4.5, 24), new THREE.MeshStandardMaterial({ color: 0xf0dba8, roughness: 1 }));
+            m.position.set(x, 0, z); m.receiveShadow = true; scene.add(m);
+            for (let i = 0; i < palms; i++) {
+                const a = rand() * Math.PI * 2, d = rand() * r * 0.35;
+                makePalm(x + Math.cos(a) * d, 2.25, z + Math.sin(a) * d, 0.8 + rand() * 0.4);
+            }
+        }
+        makeIsland(-150, 22, 22, 4);
+        makeIsland(150, 72, 16, 3);
+
+        // ============================================================
+        //  เรือลำอื่นๆ / ทุ่น (ลอยตามคลื่น)
+        // ============================================================
+        const bobbers = [];
+        function addBobber(o, yOff, amp) {
+            o.rotation.order = 'YXZ';
+            bobbers.push({ o, yOff, amp: amp || 1, ph: rand() * 6 });
+            scene.add(o);
+        }
+
+        function makeFreighter(scale) {
+            const g = new THREE.Group();
+            const hull = new THREE.Mesh(new THREE.BoxGeometry(11, 4, 24), new THREE.MeshStandardMaterial({ color: 0x1f3a5f }));
+            hull.position.y = 1; hull.castShadow = true; g.add(hull);
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(11.1, 0.7, 24.1), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+            stripe.position.y = 2.7; g.add(stripe);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(8, 5, 4), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+            cab.position.set(0, 5.5, -9); cab.castShadow = true; g.add(cab);
+            const cols = [0xb91c1c, 0x0e7490, 0xd97706, 0x15803d];
+            for (let i = 0; i < 4; i++) {
+                const c = new THREE.Mesh(new THREE.BoxGeometry(8, 3.2, 3.6), containerMat(cols[i]));
+                c.position.set(0, 4.6, 5 - i * 3.9); c.castShadow = true; g.add(c);
+            }
+            g.scale.setScalar(scale);
+            return g;
+        }
+        function makeTug() {
+            const g = new THREE.Group();
+            const hull = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.8, 10), new THREE.MeshStandardMaterial({ color: 0x1e3a8a })); hull.position.y = 0.4; hull.castShadow = true; g.add(hull);
+            const band = new THREE.Mesh(new THREE.BoxGeometry(4.7, 0.4, 10.1), new THREE.MeshStandardMaterial({ color: 0xffffff })); band.position.y = 1.1; g.add(band);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(3.4, 2.2, 3.4), new THREE.MeshStandardMaterial({ color: 0xf8fafc })); cab.position.set(0, 2.4, -0.8); cab.castShadow = true; g.add(cab);
+            const win = new THREE.Mesh(new THREE.BoxGeometry(3.5, 0.7, 3.5), new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.7, roughness: 0.2 })); win.position.set(0, 2.6, -0.8); g.add(win);
+            const fun = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.65, 2, 12), new THREE.MeshStandardMaterial({ color: 0xdc2626 })); fun.position.set(0, 4.5, -2.4); g.add(fun);
+            const funTop = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.4, 12), new THREE.MeshStandardMaterial({ color: 0x111111 })); funTop.position.set(0, 5.6, -2.4); g.add(funTop);
+            const tyre = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.3, 8, 16), new THREE.MeshStandardMaterial({ color: 0x111111 })); tyre.position.set(0, 0.6, 5.1); g.add(tyre);
+            return g;
+        }
+        function makeSailboat() {
+            const g = new THREE.Group();
+            const hull = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.1, 7), new THREE.MeshStandardMaterial({ color: 0xffffff })); hull.position.y = 0.3; hull.castShadow = true; g.add(hull);
+            const band = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.35, 7.1), new THREE.MeshStandardMaterial({ color: 0xe8664a })); band.position.y = 0.55; g.add(band);
+            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 8, 6), new THREE.MeshStandardMaterial({ color: 0xcbd5e1 })); mast.position.set(0, 4.6, 0.6); g.add(mast);
+            const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(0, 7); sh.lineTo(3.6, 0.4); sh.lineTo(0, 0);
+            const sail = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshStandardMaterial({ color: 0xfffaf0, side: THREE.DoubleSide, roughness: 0.9 }));
+            sail.rotation.y = Math.PI / 2; sail.position.set(0, 1.2, 0.6); sail.castShadow = true; g.add(sail);
+            return g;
+        }
+        function makeBuoy() {
+            const g = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.SphereGeometry(0.9, 12, 12), new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.5 })); g.add(body);
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.16, 8, 16), new THREE.MeshStandardMaterial({ color: 0xffffff })); ring.rotation.x = Math.PI / 2; g.add(ring);
+            const top = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.6, 8), new THREE.MeshStandardMaterial({ color: 0xffffff })); top.position.y = 1.4; g.add(top);
+            return g;
+        }
+
+        {
+            const tug = makeTug(); tug.position.set(-36, 0, 26); tug.rotation.y = Math.PI / 2 + 0.15; addBobber(tug, 0.7, 1);
+            const f1 = makeFreighter(1.8); f1.position.set(-230, 0, 110); f1.rotation.y = 0.5; addBobber(f1, 1.2, 0.3);
+            const f2 = makeFreighter(1.5); f2.position.set(210, 0, 150); f2.rotation.y = -0.9; addBobber(f2, 1.2, 0.3);
+            const sb1 = makeSailboat(); sb1.position.set(70, 0, 46); sb1.rotation.y = 0.8; addBobber(sb1, 0.4, 1);
+            const sb2 = makeSailboat(); sb2.position.set(-110, 0, 60); sb2.rotation.y = -0.5; addBobber(sb2, 0.4, 1);
+            [[-20, 40], [12, 52], [46, 30], [-78, 44], [-100, 6], [84, 10], [-6, 78]].forEach(([x, z]) => {
+                const b = makeBuoy(); b.position.set(x, 0, z); addBobber(b, 0.3, 1.2);
+            });
+        }
+
+        // ============================================================
+        //  ฟองคลื่นตามขอบท่าเรือและแนวชายหาด
+        // ============================================================
+        const foams = [];
+        function linePts(x0, z0, x1, z1, step) {
+            const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, z1 - z0) / step)), out = [];
+            for (let i = 0; i <= n; i++) out.push([x0 + (x1 - x0) * i / n, z0 + (z1 - z0) * i / n]);
+            return out;
+        }
+        function makeFoam(points, w, phase) {
+            const n = points.length, pos = new Float32Array(n * 2 * 3), idx = [], base = [];
+            for (let i = 0; i < n; i++) {
+                const a = points[Math.max(0, i - 1)], b = points[Math.min(n - 1, i + 1)];
+                let dx = b[0] - a[0], dz = b[1] - a[1];
+                const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+                base.push([points[i][0], points[i][1], points[i][0] - dz * w, points[i][1] + dx * w]);
+                if (i < n - 1) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+            }
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            geo.setIndex(idx);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, depthWrite: false, side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.renderOrder = 2; mesh.frustumCulled = false;
+            scene.add(mesh);
+            foams.push({ geo, mat, base, phase });
+        }
+        {
+            let p = [];
+            p = p.concat(linePts(-60, 1.2, -53.8, 1.2, 3));
+            p = p.concat(linePts(-53.8, 1.2, -53.8, 9.8, 3).slice(1));
+            p = p.concat(linePts(-53.8, 9.8, 0.8, 9.8, 4).slice(1));
+            p = p.concat(linePts(0.8, 9.8, 0.8, 1.2, 3).slice(1));
+            p = p.concat(linePts(0.8, 1.2, 60, 1.2, 4).slice(1));
+            makeFoam(p, 2.4, 0);
+
+            const wl = [];
+            for (let x = -300; x <= 300; x += 4) wl.push([x, waterlineZ(x) + 0.3]);
+            makeFoam(wl, 3, 1.5);
+        }
+        function updateFoam(t) {
+            foams.forEach(f => {
+                const pa = f.geo.attributes.position, b = f.base;
+                for (let i = 0; i < b.length; i++) {
+                    pa.setXYZ(i * 2, b[i][0], waveH(b[i][0], b[i][1], t) + 0.25, b[i][1]);
+                    pa.setXYZ(i * 2 + 1, b[i][2], waveH(b[i][2], b[i][3], t) + 0.25, b[i][3]);
+                }
+                pa.needsUpdate = true;
+                f.mat.opacity = 0.42 + 0.2 * Math.sin(t * 1.6 + f.phase);
+            });
+        }
+
+        // ============================================================
+        //  นกนางนวล + เมฆ
+        // ============================================================
+        const gulls = [];
+        {
+            const bodyGeo = new THREE.SphereGeometry(0.5, 8, 8); bodyGeo.scale(0.6, 0.5, 1.6);
+            const wingGeoR = new THREE.BoxGeometry(2.4, 0.07, 0.75); wingGeoR.translate(1.2, 0, 0);
+            const wingGeoL = new THREE.BoxGeometry(2.4, 0.07, 0.75); wingGeoL.translate(-1.2, 0, 0);
+            const white = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+            const beakMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b });
+            for (let i = 0; i < 8; i++) {
+                const g = new THREE.Group();
+                g.add(new THREE.Mesh(bodyGeo, white));
+                const beak = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.5, 6), beakMat);
+                beak.rotation.x = Math.PI / 2; beak.position.set(0, -0.05, 0.95); g.add(beak);
+                const wR = new THREE.Mesh(wingGeoR, white), wL = new THREE.Mesh(wingGeoL, white);
+                g.add(wR, wL);
+                scene.add(g);
+                gulls.push({
+                    g, wR, wL,
+                    cx: -10 + (rand() - 0.5) * 80, cz: 10 + (rand() - 0.5) * 60,
+                    cy: 32 + rand() * 24, r: 25 + rand() * 45,
+                    w: (0.12 + rand() * 0.12) * (rand() < 0.5 ? -1 : 1),
+                    a: rand() * 6.28, f: 5 + rand() * 3, ph: rand() * 6
+                });
+            }
+        }
+
+        const clouds = [];
+        {
+            const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x585048, transparent: true, opacity: 0.94 });
+            const sph = new THREE.SphereGeometry(1, 10, 8);
+            for (let i = 0; i < 14; i++) {
+                const g = new THREE.Group();
+                const n = 5 + Math.floor(rand() * 3);
+                for (let k = 0; k < n; k++) {
+                    const m = new THREE.Mesh(sph, cloudMat);
+                    const s = 12 + rand() * 12;
+                    m.scale.set(s * 1.4, s * 0.7, s);
+                    m.position.set((k - n / 2) * 15 + rand() * 6, rand() * 6, (rand() - 0.5) * 14);
+                    g.add(m);
+                }
+                g.position.set(-650 + rand() * 1300, 110 + rand() * 90, -500 + rand() * 650);
+                g.userData.speed = 3 + rand() * 4;
+                scene.add(g);
+                clouds.push(g);
+            }
+        }
+
+        // ============================================================
+        //  ตัวเรือสินค้า (ตำแหน่ง/ขนาดเดิม + รายละเอียดเพิ่ม)
+        // ============================================================
         const shipGroup = new THREE.Group();
-        
+
         const hull = new THREE.Mesh(new THREE.BoxGeometry(11, 4, 18), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
         hull.position.y = 2; hull.castShadow = true; shipGroup.add(hull);
+        const hullBottom = new THREE.Mesh(new THREE.BoxGeometry(11.1, 1.1, 18.1), new THREE.MeshStandardMaterial({ color: 0x1f2937 }));
+        hullBottom.position.y = 0.55; shipGroup.add(hullBottom);
         const hullTrim = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.5, 18.2), new THREE.MeshStandardMaterial({ color: 0xffffff }));
         hullTrim.position.y = 3.8; shipGroup.add(hullTrim);
+
+        // ชื่อเรือและช่องหน้าต่างกลม
+        {
+            const nameTex = canvasTex(512, 64, (g, w, h) => {
+                g.clearRect(0, 0, w, h);
+                g.fillStyle = '#ffffff'; g.font = '800 40px Sarabun, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+                g.fillText('LANDBRIDGE', w / 2, h / 2 + 2);
+            });
+            nameTex.wrapS = nameTex.wrapT = THREE.ClampToEdgeWrapping;
+            const nameMat = new THREE.MeshBasicMaterial({ map: nameTex, transparent: true });
+            const portMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, emissive: 0xf59e0b, emissiveIntensity: 0.35, metalness: 0.4 });
+            const portGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.14, 14);
+            [1, -1].forEach(side => {
+                const plate = new THREE.Mesh(new THREE.PlaneGeometry(8, 1), nameMat);
+                plate.position.set(0, 1.9, 9.06 * side);
+                if (side < 0) plate.rotation.y = Math.PI;
+                shipGroup.add(plate);
+                for (let i = -2; i <= 2; i++) {
+                    const p = new THREE.Mesh(portGeo, portMat);
+                    p.rotation.x = Math.PI / 2; p.position.set(i * 1.9, 3.0, 9.03 * side); shipGroup.add(p);
+                }
+            });
+        }
 
         const cabin = new THREE.Mesh(new THREE.BoxGeometry(9, 3.5, 6), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
         cabin.position.set(0, 5.8, -5); cabin.castShadow = true; shipGroup.add(cabin);
         const glass = new THREE.Mesh(new THREE.BoxGeometry(9.2, 1.5, 6.2), new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.8, roughness: 0.1 }));
         glass.position.set(0, 6, -5); shipGroup.add(glass);
 
-        const smokeStack = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1, 4, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+        const smokeStack = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1, 4, 16), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
         smokeStack.position.set(0, 8.5, -6); smokeStack.castShadow = true; shipGroup.add(smokeStack);
-        
+        const stackTop = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, 0.7, 16), new THREE.MeshStandardMaterial({ color: 0x111827 }));
+        stackTop.position.set(0, 10.35, -6); shipGroup.add(stackTop);
+
         const radarPole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2, 8), new THREE.MeshStandardMaterial({ color: 0x94a3b8 }));
         radarPole.position.set(0, 8.5, -3.5); shipGroup.add(radarPole);
         const radarAntenna = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.2, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff }));
         radarAntenna.position.set(0, 9.5, -3.5); shipGroup.add(radarAntenna);
 
+        // ธงและห่วงชูชีพ
+        const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3, 6), new THREE.MeshStandardMaterial({ color: 0xe2e8f0 }));
+        flagPole.position.set(3.2, 9.1, -5); shipGroup.add(flagPole);
+        const flagMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 1), new THREE.MeshStandardMaterial({ color: 0xef4444, side: THREE.DoubleSide }));
+        flagMesh.position.set(3.2, 10.1, -4.15); flagMesh.rotation.y = Math.PI / 2; shipGroup.add(flagMesh);
+        const lifeRing = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.15, 8, 16), new THREE.MeshStandardMaterial({ color: 0xf97316 }));
+        lifeRing.position.set(4.55, 6.2, -5); lifeRing.rotation.y = Math.PI / 2; shipGroup.add(lifeRing);
+
         const cColors = [0x1d4ed8, 0x047857, 0xd97706, 0x7e22ce];
-        for(let i=0; i<4; i++) {
-            const c = new THREE.Mesh(new THREE.BoxGeometry(8, 3.2, 3), new THREE.MeshStandardMaterial({ color: cColors[i], roughness: 0.7 }));
-            c.position.set(0, 5.7, 5 - (i*3.2)); c.castShadow = true; shipGroup.add(c);
+        for (let i = 0; i < 4; i++) {
+            const c = new THREE.Mesh(new THREE.BoxGeometry(8, 3.2, 3), containerMat(cColors[i]));
+            c.position.set(0, 5.7, 5 - (i * 3.2)); c.castShadow = true; shipGroup.add(c);
         }
 
         shipGroup.rotation.z = angle;
         scene.add(shipGroup);
 
+        // ============================================================
+        //  ระบบรอกและเพลา (ตำแหน่งเดิมทั้งหมด)
+        // ============================================================
         const pulleys = [];
         const pRadius = 1.8;
         const pMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.7, roughness: 0.3 });
-        const spokeMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 }); 
+        const spokeMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 });
 
         function createRealisticPulley(x, y, z) {
             const group = new THREE.Group();
@@ -192,28 +897,44 @@
             pin.rotation.x = Math.PI / 2;
             group.add(pin);
             group.position.set(x, y, z);
-            group.traverse(child => { if(child.isMesh) { child.castShadow = true; } });
+            group.traverse(child => { if (child.isMesh) { child.castShadow = true; } });
             scene.add(group);
             pulleys.push(group);
             return group;
         }
 
-        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(32, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.5 }));
+        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(32, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.45 }));
         ceiling.position.set(22, iHeight + 48, 0); ceiling.castShadow = true; scene.add(ceiling);
+
+        // เสาเหล็กค้ำโครงรอก
+        {
+            const steel = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.45 });
+            const topY = iHeight + 48, botY = 6;
+            [[6.5, -3.4], [6.5, 3.4], [37.5, -3.4], [37.5, 3.4]].forEach(([x, z]) => {
+                const p = new THREE.Mesh(new THREE.BoxGeometry(1.2, topY - botY, 1.2), steel);
+                p.position.set(x, (topY + botY) / 2, z); p.castShadow = true; scene.add(p);
+            });
+            [6.5, 37.5].forEach(x => {
+                const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 8), steel);
+                b.position.set(x, topY - 12, 0); scene.add(b);
+                const b2 = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 8), steel);
+                b2.position.set(x, botY + 12, 0); scene.add(b2);
+            });
+        }
 
         const fpInc = createRealisticPulley(0, iHeight + 6 + pRadius, 0);
         const mPs = [];
-        for(let i=0; i<6; i++) {
-            mPs.push(createRealisticPulley(12 + i*3.5, iHeight + 5 + i*5, 0));
+        for (let i = 0; i < 6; i++) {
+            mPs.push(createRealisticPulley(12 + i * 3.5, iHeight + 5 + i * 5, 0));
         }
         const fpRight = createRealisticPulley(35, iHeight + 44, 0);
 
         const wGroup = new THREE.Group();
-        const mainWheel = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.6, 32), new THREE.MeshStandardMaterial({ color: 0x047857 }));
+        const mainWheel = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.6, 32), new THREE.MeshStandardMaterial({ color: 0x0e8a94 }));
         const mainSpoke1 = new THREE.Mesh(new THREE.BoxGeometry(12.2, 0.8, 0.4), spokeMat);
         const mainSpoke2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 12.2), spokeMat);
         mainWheel.add(mainSpoke1, mainSpoke2);
-        mainWheel.rotation.x = Math.PI / 2; 
+        mainWheel.rotation.x = Math.PI / 2;
 
         const mainAxle = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.5, 32), new THREE.MeshStandardMaterial({ color: 0x334155 }));
         const axleSpoke = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.7, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff }));
@@ -222,7 +943,7 @@
 
         wGroup.add(mainWheel, mainAxle);
         wGroup.position.set(35, iHeight + 20, 0);
-        wGroup.traverse(child => { if(child.isMesh) { child.castShadow = true; } });
+        wGroup.traverse(child => { if (child.isMesh) { child.castShadow = true; } });
         scene.add(wGroup);
 
         const pullHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 3, 16), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
@@ -230,48 +951,59 @@
         scene.add(pullHandle);
 
         const ropes = [];
-        const ropeMat = new THREE.LineBasicMaterial({ color: 0x111111, linewidth: 3 });
-        for(let i=0; i<20; i++) { 
-            const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), ropeMat); 
-            scene.add(l); ropes.push(l); 
+        const ropeMat = new THREE.LineBasicMaterial({ color: 0x2b1d0e, linewidth: 3 });
+        for (let i = 0; i < 20; i++) {
+            const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), ropeMat);
+            scene.add(l); ropes.push(l);
         }
 
         function updateRopes() {
             let rIdx = 0;
-            const setR = (p1, p2) => { if(ropes[rIdx] && p1 && p2) { ropes[rIdx].geometry.setFromPoints([p1, p2]); rIdx++; } };
-            
+            const setR = (p1, p2) => { if (ropes[rIdx] && p1 && p2) { ropes[rIdx].geometry.setFromPoints([p1, p2]); rIdx++; } };
+
             setR(shipGroup.position, new THREE.Vector3(fpInc.position.x - pRadius, fpInc.position.y, 0));
             setR(new THREE.Vector3(fpInc.position.x + pRadius, fpInc.position.y, 0), mPs[0].position);
-            
-            for(let i=0; i<5; i++) {
+
+            for (let i = 0; i < 5; i++) {
                 setR(new THREE.Vector3(mPs[i].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[i].position.x - pRadius, mPs[i].position.y, 0));
-                setR(new THREE.Vector3(mPs[i].position.x + pRadius, mPs[i].position.y, 0), mPs[i+1].position);
+                setR(new THREE.Vector3(mPs[i].position.x + pRadius, mPs[i].position.y, 0), mPs[i + 1].position);
             }
-            
+
             setR(new THREE.Vector3(mPs[5].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[5].position.x - pRadius, mPs[5].position.y, 0));
             setR(new THREE.Vector3(mPs[5].position.x + pRadius, mPs[5].position.y, 0), new THREE.Vector3(fpRight.position.x - pRadius, fpRight.position.y, 0));
             setR(new THREE.Vector3(fpRight.position.x + pRadius, fpRight.position.y, 0), new THREE.Vector3(wGroup.position.x - 1.5, wGroup.position.y, 0));
-            
-            let handY = wGroup.position.y - 12;
-            if (isPulling) { handY -= 2; } 
-            
-            setR(new THREE.Vector3(wGroup.position.x + 6, wGroup.position.y, 0), new THREE.Vector3(wGroup.position.x + 6, handY, 0));
-            pullHandle.position.set(wGroup.position.x + 6, handY, 0); 
 
-            for(let i=rIdx; i<ropes.length; i++) ropes[i].geometry.setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+            let handY = wGroup.position.y - 12;
+            if (isPulling) { handY -= 2; }
+
+            setR(new THREE.Vector3(wGroup.position.x + 6, wGroup.position.y, 0), new THREE.Vector3(wGroup.position.x + 6, handY, 0));
+            pullHandle.position.set(wGroup.position.x + 6, handY, 0);
+
+            for (let i = rIdx; i < ropes.length; i++) ropes[i].geometry.setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
         }
 
+        // ============================================================
+        //  ฟิสิกส์ (ตรรกะเดิมทั้งหมด ไม่แตะต้อง)
+        // ============================================================
         const GRAVITY = 9.8;
         const MU = 0.5; // สัมประสิทธิ์ความเสียดทาน
-        let shipDist = iLen / 2.2; 
-        let shipVelocity = 0; 
+        let shipDist = iLen / 2.2;
+        let shipVelocity = 0;
         let isPulling = false;
-        
+
         const btn = document.getElementById('pullBtn');
         btn.addEventListener('mousedown', () => isPulling = true); btn.addEventListener('mouseup', () => isPulling = false);
         btn.addEventListener('mouseleave', () => isPulling = false);
-        btn.addEventListener('touchstart', (e) => { e.preventDefault(); isPulling = true; }, {passive: false});
-        btn.addEventListener('touchend', (e) => { e.preventDefault(); isPulling = false; }, {passive: false});
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); isPulling = true; }, { passive: false });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); isPulling = false; }, { passive: false });
+
+        // ย่อ/ขยายแผงควบคุม
+        const panel = document.getElementById('ui-panel');
+        const toggleBtn = document.getElementById('togglePanel');
+        toggleBtn.addEventListener('click', () => {
+            panel.classList.toggle('collapsed');
+            toggleBtn.textContent = panel.classList.contains('collapsed') ? '+' : '–';
+        });
 
         function updatePhysics(dt) {
             const m = parseFloat(document.getElementById('massSlider').value);
@@ -279,18 +1011,18 @@
             document.getElementById('massVal').innerText = m + ' kg';
             document.getElementById('forceVal').innerText = F + ' N';
 
-            const T_axle = 4 * F; 
-            let T_pull = isPulling ? (T_axle * 64) : 0; 
-            
+            const T_axle = 4 * F;
+            let T_pull = isPulling ? (T_axle * 64) : 0;
+
             const W_p = m * GRAVITY * Math.sin(angle); // แรงถ่วงลง (mg sin 30)
             const N_force = m * GRAVITY * Math.cos(angle); // แรงแนวฉาก (mg cos 30)
             const f_k = MU * N_force; // แรงเสียดทานจลน์ (f = μN)
-            
+
             let netForceNoFriction = T_pull - W_p;
             let netForce = 0;
 
             // คำนวณทิศทางแรงเสียดทานต้านการเคลื่อนที่
-            if (Math.abs(shipVelocity) > 0.05) { 
+            if (Math.abs(shipVelocity) > 0.05) {
                 if (shipVelocity > 0) {
                     netForce = netForceNoFriction - f_k; // ขยับขึ้น แรงเสียดทานกดลง
                 } else {
@@ -309,7 +1041,7 @@
             }
 
             const acc = netForce / m;
-            
+
             // ป้องกันเรือสั่นเมื่อความเร็วเปลี่ยนทิศทางในเฟรมเดียว (Jitter fix)
             const newVelocity = shipVelocity + (acc * dt);
             if ((shipVelocity > 0 && newVelocity < 0) || (shipVelocity < 0 && newVelocity > 0)) {
@@ -323,10 +1055,10 @@
             // ขอบเขต
             if (shipDist <= 0) {
                 shipDist = 0;
-                if (shipVelocity < 0) shipVelocity = 0; 
+                if (shipVelocity < 0) shipVelocity = 0;
             } else if (shipDist >= iLen - 12) {
                 shipDist = iLen - 12;
-                if (shipVelocity > 0) shipVelocity = 0; 
+                if (shipVelocity > 0) shipVelocity = 0;
             }
 
             let stat = "หยุดนิ่ง";
@@ -334,7 +1066,7 @@
 
             if (shipDist <= 0 && netForce <= 0) stat = "ตกถึงพื้นแล้ว";
             else if (shipDist >= iLen - 12 && netForce >= 0) stat = "ดึงถึงยอดแล้ว";
-            else if (shipVelocity > 0.01) { stat = "กำลังขึ้น ↑"; col = "#15803d"; } 
+            else if (shipVelocity > 0.01) { stat = "กำลังขึ้น ↑"; col = "#15803d"; }
             else if (shipVelocity < -0.01) { stat = "กำลังไหลลง ↓"; col = "#dc2626"; }
 
             // อัปเดตข้อมูลบนหน้าจอ
@@ -343,55 +1075,81 @@
             document.getElementById('c_w').innerText = `${W_p.toFixed(0)} N`;
             document.getElementById('c_f').innerText = `${f_k.toFixed(0)} N`;
             document.getElementById('c_acc').innerText = `${acc.toFixed(2)} m/s²`;
-            
-            document.getElementById('c_status').innerText = stat; 
+
+            document.getElementById('c_status').innerText = stat;
             document.getElementById('c_status').style.color = col;
 
             shipGroup.position.x = -iBase + (shipDist * Math.cos(angle));
             shipGroup.position.y = 6 + (shipDist * Math.sin(angle));
-            
-            for(let i=0; i<6; i++) {
-                if(mPs[i]) {
-                    const moveUp = shipDist * 0.3 * ((i+1)/6); 
-                    mPs[i].position.y = (iHeight + 5 + i*5) + moveUp;
-                    mPs[i].rotation.z += (shipVelocity * dt * 0.5); 
+
+            for (let i = 0; i < 6; i++) {
+                if (mPs[i]) {
+                    const moveUp = shipDist * 0.3 * ((i + 1) / 6);
+                    mPs[i].position.y = (iHeight + 5 + i * 5) + moveUp;
+                    mPs[i].rotation.z += (shipVelocity * dt * 0.5);
                 }
             }
             fpInc.rotation.z -= (shipVelocity * dt * 0.8);
             fpRight.rotation.z -= (shipVelocity * dt * 0.4);
-            if(wGroup) wGroup.rotation.z -= (shipVelocity * dt * 1.5);
+            if (wGroup) wGroup.rotation.z -= (shipVelocity * dt * 1.5);
         }
 
+        // ============================================================
+        //  ลูปแอนิเมชัน
+        // ============================================================
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-            const dt = Math.min(clock.getDelta(), 0.05); 
+            const dt = Math.min(clock.getDelta(), 0.05);
+            const t = Date.now() * 0.0015;
             controls.update();
-            
-            if(sea.geometry.attributes.position) {
-                const time = Date.now() * 0.0015;
-                const pos = sea.geometry.attributes.position.array;
-                for(let i=0; i<pos.length; i+=3) pos[i+2] = Math.sin(pos[i]*0.05 + time)*0.7 + Math.cos(pos[i+1]*0.05 + time)*0.7;
-                sea.geometry.attributes.position.needsUpdate = true;
-            }
 
-            birds.children.forEach(b => {
-                b.position.x += 15 * dt;
-                if(b.position.x > 100) b.position.x = -100;
-                b.position.y += Math.sin(Date.now()*0.005 + b.position.x)*0.03;
+            sky.position.copy(camera.position);
+            sunSprite.position.copy(camera.position).addScaledVector(sunDir, 2500);
+
+            // คลื่น
+            const pos = sea.geometry.attributes.position.array;
+            for (let i = 0; i < pos.length; i += 3) pos[i + 2] = Math.sin(pos[i] * 0.05 + t) * 0.7 + Math.cos(pos[i + 1] * 0.05 + t) * 0.7;
+            sea.geometry.attributes.position.needsUpdate = true;
+            updateFoam(t);
+
+            // เรือ/ทุ่นโยกตามคลื่น
+            bobbers.forEach(b => {
+                const p = b.o.position;
+                p.y = waveH(p.x, p.z, t) + b.yOff;
+                b.o.rotation.z = Math.cos(p.x * 0.05 + t) * 0.035 * b.amp;
+                b.o.rotation.x = Math.sin(p.z * 0.05 - t) * 0.035 * b.amp;
             });
+
+            // นกนางนวล
+            gulls.forEach(o => {
+                o.a += o.w * dt;
+                o.g.position.set(o.cx + Math.cos(o.a) * o.r, o.cy + Math.sin(o.a * 3 + o.ph) * 2, o.cz + Math.sin(o.a) * o.r);
+                o.g.rotation.y = (o.w > 0) ? -o.a : -o.a + Math.PI;
+                const fl = Math.sin(t * o.f + o.ph) * 0.5;
+                o.wR.rotation.z = fl; o.wL.rotation.z = -fl;
+            });
+
+            // เมฆ
+            clouds.forEach(c => { c.position.x += c.userData.speed * dt; if (c.position.x > 750) c.position.x = -750; });
+
+            // ประภาคาร เครน ธง เรดาร์
+            lightBeam.rotation.y += 0.9 * dt;
+            craneHook.rotation.x = Math.sin(t * 0.9) * 0.05;
+            craneHook.rotation.z = Math.sin(t * 0.7 + 1) * 0.03;
+            flagMesh.rotation.y = Math.PI / 2 + Math.sin(t * 6) * 0.25;
             radarAntenna.rotation.y += 2 * dt;
 
-            updatePhysics(dt); 
-            updateRopes(); 
+            updatePhysics(dt);
+            updateRopes();
             renderer.render(scene, camera);
         }
         animate();
 
-        window.addEventListener('resize', () => { 
-            camera.aspect = window.innerWidth/window.innerHeight; 
-            camera.updateProjectionMatrix(); 
-            renderer.setSize(window.innerWidth, window.innerHeight); 
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
     </script>
 </body>
