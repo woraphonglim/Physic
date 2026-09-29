@@ -3,170 +3,285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Landbridge Physics Simulator - 256F</title>
+    <title>Landbridge Simulator - Ultimate Physics</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #4fb9e8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
+        body { margin: 0; overflow: hidden; background-color: #87ceeb; font-family: 'Segoe UI', Tahoma, sans-serif; touch-action: none; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
-        #error-log { position: absolute; top: 0; left: 0; width: 100%; background: red; color: white; padding: 15px; z-index: 9999; display: none; font-weight: bold; }
         
         #ui-panel {
             position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(255, 255, 255, 0.95);
-            padding: 20px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); width: 320px;
+            padding: 20px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 330px;
+            backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8);
         }
-        h2 { margin: 0 0 15px 0; color: #0f172a; font-size: 20px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; }
-        .control-group { margin-bottom: 15px; }
-        label { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; color: #334155; margin-bottom: 8px; }
-        input[type=range] { width: 100%; accent-color: #0284c7; }
+        h2 { margin: 0 0 15px 0; color: #0f172a; font-size: 22px; border-bottom: 3px solid #38bdf8; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .control-group { margin-bottom: 18px; }
+        label { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 8px; }
+        input[type=range] { width: 100%; accent-color: #0284c7; height: 6px; border-radius: 5px; outline: none; }
         
-        .calc-box { background: #f1f5f9; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 13px; color: #475569; }
-        .calc-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
-        .calc-total { font-weight: bold; color: #b91c1c; border-top: 1px dashed #94a3b8; padding-top: 6px; margin-top: 4px; }
+        .calc-box { background: #f8fafc; border-radius: 10px; padding: 15px; font-family: 'Courier New', monospace; font-size: 13px; color: #334155; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .calc-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .calc-total { font-weight: bold; color: #dc2626; border-top: 2px dashed #cbd5e1; padding-top: 8px; margin-top: 6px; }
         
         button {
-            width: 100%; padding: 14px; background: #0284c7; color: white; border: none; border-radius: 8px;
-            font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 15px; touch-action: none;
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #0284c7, #1d4ed8); color: white; border: none; border-radius: 10px;
+            font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 20px; touch-action: none;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); text-transform: uppercase; transition: all 0.2s;
         }
-        button:active { transform: scale(0.97); }
-        .instruction { position: absolute; bottom: 20px; right: 20px; z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 10px 15px; border-radius: 20px; font-size: 12px; }
+        button:active { transform: scale(0.96); box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4); }
+        .instruction { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 10; background: rgba(15, 23, 42, 0.8); color: white; padding: 10px 20px; border-radius: 30px; font-size: 13px; font-weight: bold; pointer-events: none; letter-spacing: 0.5px; }
     </style>
-    <!-- ใช้ลิงก์ชุดเดิมที่เคยเปิดติดบนไอแพดของคุณ -->
-    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-    <div id="error-log"></div>
     <div id="canvas-container"></div>
     
     <div id="ui-panel">
-        <h2>Landbridge System (256F)</h2>
+        <h2>Physics Engine v4</h2>
         <div class="control-group">
-            <label>มวลเรือ (m) <span id="massVal">500 kg</span></label>
-            <input type="range" id="massSlider" min="100" max="2000" step="50" value="500">
+            <label>มวลเรือ (m) <span id="massVal">100 kg</span></label>
+            <input type="range" id="massSlider" min="50" max="2000" step="10" value="100">
         </div>
         <div class="control-group">
-            <label>แรงดึงเพลา (F) <span id="forceVal">10 N</span></label>
-            <input type="range" id="forceSlider" min="0" max="100" step="1" value="10">
+            <label>แรงดึงเพลา (F) <span id="forceVal">0 N</span></label>
+            <!-- ตั้งค่า Default ให้ดึง 0 N เพื่อให้เรือสไลด์ลงทันทีที่เปิดเว็บ -->
+            <input type="range" id="forceSlider" min="0" max="150" step="1" value="0">
         </div>
         
         <div class="calc-box">
-            <div class="calc-row"><span>ล้อ/เพลา (12:3):</span> <span id="c_t1">T = 4F</span></div>
-            <div class="calc-row"><span>รอก 6 ตัว (2^6):</span> <span>x 64</span></div>
-            <div class="calc-row calc-total"><span>แรงดึงรวม (T_pull):</span> <span id="c_tpull">2560 N</span></div>
-            <div class="calc-row"><span>น้ำหนักถ่วง (mg sin30):</span> <span id="c_w">2450 N</span></div>
-            <div class="calc-row calc-total" style="color:#0f172a;"><span>สถานะ:</span> <span id="c_status">ดึงขึ้น</span></div>
+            <div class="calc-row"><span>T เพลา (4F):</span> <span id="c_t1">0 N</span></div>
+            <div class="calc-row"><span>ตัวคูณรอก:</span> <span>x 64</span></div>
+            <div class="calc-row calc-total"><span>T_pull:</span> <span id="c_tpull">0 N</span></div>
+            <div class="calc-row"><span>W (mg sin30):</span> <span id="c_w">490 N</span></div>
+            <div class="calc-row"><span>ความเร่ง (a):</span> <span id="c_acc">0.0 m/s²</span></div>
+            <div class="calc-row calc-total" style="color:#0f172a;"><span>สถานะ:</span> <span id="c_status">ปล่อยอิสระ</span></div>
         </div>
-        <button id="pullBtn">กดค้างเพื่อดึงเรือ</button>
+        <button id="pullBtn">กดค้างเพื่อออกแรงดึง F</button>
     </div>
     
-    <div class="instruction">ใช้นิ้วลาก: หมุน | กางนิ้ว: ซูม</div>
+    <div class="instruction">👈 ลากนิ้วหมุนกล้อง | 🤏 กางนิ้วซูม</div>
 
     <script>
-        // ระบบดักจับ Error บนหน้าจอ
-        window.onerror = function(msg, url, line) {
-            const errLog = document.getElementById('error-log');
-            errLog.innerHTML += "ERROR: " + msg + " (Line: " + line + ")<br>";
-            errLog.style.display = 'block';
-        };
-
+        // 1. Setup Scene
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x60a5fa);
-        scene.fog = new THREE.FogExp2(0x60a5fa, 0.003);
+        scene.background = new THREE.Color(0x87ceeb); // สีฟ้าสว่าง
+        scene.fog = new THREE.FogExp2(0x87ceeb, 0.002);
 
-        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1500);
-        camera.position.set(-40, 25, 70);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.set(-50, 30, 80);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.target.set(10, 10, 0);
+        controls.target.set(15, 15, 0);
         controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 + 0.1; // ห้ามซูมทะลุใต้ดิน
 
-        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
-        const dirLight = new THREE.DirectionalLight(0xfff5b6, 1.2);
-        dirLight.position.set(60, 100, 40);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
+        // 2. Lighting (จัดแสงอลังการ)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        
+        const sunLight = new THREE.DirectionalLight(0xfff7d6, 1.5);
+        sunLight.position.set(80, 150, 50);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 4096;
+        sunLight.shadow.mapSize.height = 4096;
+        sunLight.shadow.camera.near = 10;
+        sunLight.shadow.camera.far = 400;
+        sunLight.shadow.camera.left = -80;
+        sunLight.shadow.camera.right = 80;
+        sunLight.shadow.camera.top = 80;
+        sunLight.shadow.camera.bottom = -80;
+        scene.add(sunLight);
 
-        // ฉากพื้นทะเลและท่าเรือ
-        const seaGeo = new THREE.PlaneGeometry(800, 800, 32, 32);
-        const sea = new THREE.Mesh(seaGeo, new THREE.MeshStandardMaterial({ color: 0x0284c7, transparent: true, opacity: 0.85, roughness: 0.1 }));
+        // ดวงอาทิตย์จำลอง
+        const sunSphere = new THREE.Mesh(new THREE.SphereGeometry(8, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffdd44 }));
+        sunSphere.position.copy(sunLight.position);
+        scene.add(sunSphere);
+
+        // 3. Environment & Decorations (รายละเอียดสภาพแวดล้อม)
+        // ผิวน้ำทะเล (Ocean)
+        const seaGeo = new THREE.PlaneGeometry(1000, 1000, 128, 128);
+        const seaMat = new THREE.MeshStandardMaterial({ 
+            color: 0x005b96, transparent: true, opacity: 0.85, 
+            roughness: 0.1, metalness: 0.9, flatShading: true 
+        });
+        const sea = new THREE.Mesh(seaGeo, seaMat);
         sea.rotation.x = -Math.PI / 2;
         scene.add(sea);
 
-        const pier = new THREE.Mesh(new THREE.BoxGeometry(100, 5, 45), new THREE.MeshStandardMaterial({ color: 0x94a3b8 }));
-        pier.position.set(0, 2.5, -22.5);
+        // ท่าเรือคอนกรีต
+        const pier = new THREE.Mesh(new THREE.BoxGeometry(120, 6, 50), new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9 }));
+        pier.position.set(0, 3, -25);
         pier.receiveShadow = true;
         scene.add(pier);
 
-        // พื้นเอียง
+        // โขดหินตกแต่งรอบท่าเรือ (Rocks)
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 1, flatShading: true });
+        for(let i=0; i<30; i++) {
+            const size = Math.random() * 4 + 2;
+            const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(size), rockMat);
+            rock.position.set((Math.random() - 0.5) * 140, size/2, -10 + Math.random() * 30);
+            rock.rotation.set(Math.random(), Math.random(), Math.random());
+            rock.castShadow = true; rock.receiveShadow = true;
+            scene.add(rock);
+        }
+
+        // พื้นเอียง (Landbridge)
         const angle = 30 * Math.PI / 180;
-        const iLen = 55;
+        const iLen = 60; // ความยาวพื้นเอียง
         const iHeight = iLen * Math.sin(angle); 
         const iBase = iLen * Math.cos(angle);   
 
         const shape = new THREE.Shape();
         shape.moveTo(0, 0); shape.lineTo(-iBase, 0); shape.lineTo(0, iHeight); shape.lineTo(0, 0);
-        const incline = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 15, bevelEnabled: false }), new THREE.MeshStandardMaterial({ color: 0x475569 }));
-        incline.position.set(0, 5, -7.5);
+        const incline = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 16, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.5 }), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 }));
+        incline.position.set(0, 6, -8); // วางบนท่าเรือ
         incline.receiveShadow = true;
         scene.add(incline);
 
-        // โมเดลเรือ
+        // 4. เรือสินค้า (Detailed Cargo Ship)
         const shipGroup = new THREE.Group();
-        const hull = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 16), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
+        
+        // ตัวเรือทูโทน
+        const hull = new THREE.Mesh(new THREE.BoxGeometry(11, 4, 18), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
         hull.position.y = 2; hull.castShadow = true; shipGroup.add(hull);
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(8, 3, 5), new THREE.MeshStandardMaterial({ color: 0xffffff }));
-        cabin.position.set(0, 5.5, -4); cabin.castShadow = true; shipGroup.add(cabin);
+        const hullTrim = new THREE.Mesh(new THREE.BoxGeometry(11.2, 0.5, 18.2), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        hullTrim.position.y = 3.8; shipGroup.add(hullTrim);
+
+        // ห้องบังคับการ
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(9, 3.5, 6), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+        cabin.position.set(0, 5.8, -5); cabin.castShadow = true; shipGroup.add(cabin);
+        const glass = new THREE.Mesh(new THREE.BoxGeometry(9.2, 1.5, 6.2), new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.8, roughness: 0.1 }));
+        glass.position.set(0, 6, -5); shipGroup.add(glass);
+
+        // ปล่องควัน
+        const smokeStack = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1, 4, 16), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+        smokeStack.position.set(0, 8.5, -6); smokeStack.castShadow = true; shipGroup.add(smokeStack);
+        
+        // เรดาร์ (สามารถหมุนได้)
+        const radarPole = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2, 8), new THREE.MeshStandardMaterial({ color: 0x94a3b8 }));
+        radarPole.position.set(0, 8.5, -3.5); shipGroup.add(radarPole);
+        const radarAntenna = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.2, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        radarAntenna.position.set(0, 9.5, -3.5); shipGroup.add(radarAntenna);
+
+        // ตู้คอนเทนเนอร์ 4 ตู้
+        const cColors = [0x1d4ed8, 0x047857, 0xd97706, 0x7e22ce];
+        for(let i=0; i<4; i++) {
+            const c = new THREE.Mesh(new THREE.BoxGeometry(8, 3.2, 3), new THREE.MeshStandardMaterial({ color: cColors[i], roughness: 0.7 }));
+            c.position.set(0, 5.7, 5 - (i*3.2)); c.castShadow = true; shipGroup.add(c);
+        }
+
         shipGroup.rotation.z = angle;
         scene.add(shipGroup);
 
-        // ระบบรอก
+        // 5. ระบบรอกหมุนได้สมจริง (Realistic Pulleys)
         const pulleys = [];
         const pRadius = 1.8;
-        const pMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6 });
-        const pGeo = new THREE.CylinderGeometry(pRadius, pRadius, 1.2, 32);
-        function mkP(x, y, z) { const p = new THREE.Mesh(pGeo, pMat); p.rotation.x = Math.PI/2; p.position.set(x, y, z); p.castShadow = true; scene.add(p); pulleys.push(p); return p; }
+        const pMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.7, roughness: 0.3 });
+        const spokeMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.8 }); // ซี่ล้อ
 
-        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(30, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
-        ceiling.position.set(22, iHeight + 40, 0); scene.add(ceiling);
+        function createRealisticPulley(x, y, z) {
+            const group = new THREE.Group();
+            
+            // ตัววงล้อรอก
+            const wheel = new THREE.Mesh(new THREE.CylinderGeometry(pRadius, pRadius, 1.2, 32), pMat);
+            wheel.rotation.x = Math.PI / 2;
+            group.add(wheel);
 
-        const fpInc = mkP(0, iHeight + 5 + pRadius, 0);
+            // ซี่กงล้อ (เพื่อให้เห็นเวลาหมุน)
+            const spoke1 = new THREE.Mesh(new THREE.BoxGeometry(pRadius * 2.1, 1.4, 0.4), spokeMat);
+            const spoke2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.4, pRadius * 2.1), spokeMat);
+            group.add(spoke1, spoke2);
+
+            // แกนยึดตรงกลาง
+            const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.8, 16), new THREE.MeshStandardMaterial({ color: 0x000000 }));
+            pin.rotation.x = Math.PI / 2;
+            group.add(pin);
+
+            group.position.set(x, y, z);
+            
+            // ทำให้เกิดเงา
+            group.traverse(child => { if(child.isMesh) { child.castShadow = true; } });
+            
+            scene.add(group);
+            pulleys.push(group);
+            return group;
+        }
+
+        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(32, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.5 }));
+        ceiling.position.set(22, iHeight + 42, 0); ceiling.castShadow = true; scene.add(ceiling);
+
+        const fpInc = createRealisticPulley(0, iHeight + 6 + pRadius, 0);
         const mPs = [];
-        for(let i=0; i<6; i++) mPs.push(mkP(12 + i*2.8, iHeight + 10 + i*3.5, 0));
-        const fpRight = mkP(32, iHeight + 38, 0);
+        for(let i=0; i<6; i++) mPs.push(createRealisticPulley(12 + i*2.8, iHeight + 12 + i*3.5, 0));
+        const fpRight = createRealisticPulley(33, iHeight + 40, 0);
 
-        // ล้อ (12) และ เพลา (3)
+        // ล้อ (12) และ เพลา (3) แบบสมจริงเห็นการหมุนชัดเจน
         const wGroup = new THREE.Group();
-        wGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.6, 32), new THREE.MeshStandardMaterial({ color: 0x0f766e }))); 
-        wGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.5, 32), new THREE.MeshStandardMaterial({ color: 0x334155 }))); 
-        wGroup.rotation.x = Math.PI/2; wGroup.position.set(32, iHeight + 18, 0); scene.add(wGroup);
+        const mainWheel = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.6, 32), new THREE.MeshStandardMaterial({ color: 0x047857 }));
+        const mainSpoke1 = new THREE.Mesh(new THREE.BoxGeometry(12.2, 0.8, 0.4), spokeMat);
+        const mainSpoke2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 12.2), spokeMat);
+        mainWheel.add(mainSpoke1, mainSpoke2);
+        mainWheel.rotation.x = Math.PI / 2;
 
-        // ระบบเชือก
+        const mainAxle = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.5, 32), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+        const axleSpoke = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.7, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        mainAxle.add(axleSpoke);
+        mainAxle.rotation.x = Math.PI / 2;
+
+        wGroup.add(mainWheel, mainAxle);
+        wGroup.position.set(33, iHeight + 18, 0);
+        wGroup.traverse(child => { if(child.isMesh) { child.castShadow = true; } });
+        scene.add(wGroup);
+
+        // 6. ระบบเชือก (Ropes)
         const ropes = [];
-        const ropeMat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
-        for(let i=0; i<20; i++) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), ropeMat); scene.add(l); ropes.push(l); }
+        const ropeMat = new THREE.LineBasicMaterial({ color: 0x111111, linewidth: 3 });
+        for(let i=0; i<20; i++) { 
+            const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), ropeMat); 
+            scene.add(l); ropes.push(l); 
+        }
 
         function updateRopes() {
             let rIdx = 0;
             const setR = (p1, p2) => { if(ropes[rIdx] && p1 && p2) { ropes[rIdx].geometry.setFromPoints([p1, p2]); rIdx++; } };
+            
+            // จากเรือไปรอกตายตัว
             setR(shipGroup.position, new THREE.Vector3(fpInc.position.x - pRadius, fpInc.position.y, 0));
+            // รอกตายตัวไปรอกเคลื่อนที่ 1
             setR(new THREE.Vector3(fpInc.position.x + pRadius, fpInc.position.y, 0), mPs[0].position);
+            
+            // โยงรอกเคลื่อนที่
             for(let i=0; i<5; i++) {
                 setR(new THREE.Vector3(mPs[i].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[i].position.x - pRadius, mPs[i].position.y, 0));
                 setR(new THREE.Vector3(mPs[i].position.x + pRadius, mPs[i].position.y, 0), mPs[i+1].position);
             }
+            
+            // รอกตัวที่ 6 ไปเพดาน และไปรอกตายตัวขวา
             setR(new THREE.Vector3(mPs[5].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[5].position.x - pRadius, mPs[5].position.y, 0));
             setR(new THREE.Vector3(mPs[5].position.x + pRadius, mPs[5].position.y, 0), new THREE.Vector3(fpRight.position.x - pRadius, fpRight.position.y, 0));
+            
+            // จากรอกขวาลงเพลา (รัศมี 1.5)
             setR(new THREE.Vector3(fpRight.position.x + pRadius, fpRight.position.y, 0), new THREE.Vector3(wGroup.position.x - 1.5, wGroup.position.y, 0));
+            
             for(let i=rIdx; i<ropes.length; i++) ropes[i].geometry.setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
         }
 
-        // ระบบฟิสิกส์และการกดดึงเชือก
+        // 7. ฟิสิกส์บริสุทธิ์ (Pure Kinematics - ไม่มีแรงต้าน)
         const GRAVITY = 9.8;
-        let shipDist = 0; let isPulling = false;
+        
+        // **จับเรือไปวางไว้ครึ่งทางของพื้นเอียง เพื่อให้มันไหลตกทันทีที่เปิดเว็บ!**
+        let shipDist = iLen / 2.5; 
+        let shipVelocity = 0; 
+        let isPulling = false;
         
         const btn = document.getElementById('pullBtn');
         btn.addEventListener('mousedown', () => isPulling = true); btn.addEventListener('mouseup', () => isPulling = false);
@@ -180,44 +295,112 @@
             document.getElementById('massVal').innerText = m + ' kg';
             document.getElementById('forceVal').innerText = F + ' N';
 
-            const T_axle = 4 * F; let T_pull = T_axle * 64; if(!isPulling) T_pull = 0;
-            const W_p = m * GRAVITY * Math.sin(angle); const net = T_pull - W_p;
+            // แรงดึง (Tension)
+            const T_axle = 4 * F; 
+            let T_pull = isPulling ? (T_axle * 64) : 0; 
             
-            let acc = 0, stat = "หยุดนิ่ง (ล็อก)", col = "#475569";
-            if(isPulling && net > 0) { acc = net/m; stat = "เรือขยับขึ้น"; col = "#15803d"; }
-            else if(isPulling && net <= 0) { stat = "แรงดึงไม่พอ"; col = "#b91c1c"; }
+            // น้ำหนักถ่วง (Weight Parallel to Incline)
+            const W_p = m * GRAVITY * Math.sin(angle); 
+            
+            // แรงลัพธ์ (Net Force) = ดึงขึ้น - ถ่วงลง
+            const netForce = T_pull - W_p;
+            
+            // ความเร่ง a = F_net / m  (ไม่มีการคูณแรงต้านใดๆ ทั้งสิ้น!)
+            const acc = netForce / m;
 
-            document.getElementById('c_t1').innerText = `T = ${T_axle.toFixed(0)} N`;
+            // v = u + at
+            shipVelocity += acc * dt;
+
+            // s = s + vt
+            shipDist += shipVelocity * dt;
+
+            // ขอบเขตการเคลื่อนที่ (ชนล่างสุด หรือ ชนบนสุด)
+            if (shipDist <= 0) {
+                shipDist = 0;
+                if (shipVelocity < 0) shipVelocity = 0; // ชนพื้น
+            } else if (shipDist >= iLen - 12) {
+                shipDist = iLen - 12;
+                if (shipVelocity > 0) shipVelocity = 0; // ชนสุดทาง
+            }
+
+            // แสดงผล UI
+            let stat = "หยุดนิ่ง";
+            let col = "#475569";
+
+            if (shipDist <= 0 && netForce <= 0) {
+                stat = "ตกถึงพื้นแล้ว";
+            } else if (shipDist >= iLen - 12 && netForce >= 0) {
+                stat = "ดึงถึงยอดแล้ว";
+            } else if (shipVelocity > 0.1) {
+                stat = "กำลังขึ้น ↑"; col = "#15803d"; 
+            } else if (shipVelocity < -0.1) {
+                stat = "กำลังไหลลง ↓"; col = "#dc2626"; 
+            }
+
+            document.getElementById('c_t1').innerText = `${T_axle.toFixed(0)} N`;
             document.getElementById('c_tpull').innerText = `${T_pull.toFixed(0)} N`;
             document.getElementById('c_w').innerText = `${W_p.toFixed(0)} N`;
-            document.getElementById('c_status').innerText = stat; document.getElementById('c_status').style.color = col;
+            document.getElementById('c_acc').innerText = `${acc.toFixed(2)} m/s²`;
+            
+            document.getElementById('c_status').innerText = stat; 
+            document.getElementById('c_status').style.color = col;
 
-            shipDist += (acc * dt * 0.5); if(shipDist > iLen - 12) shipDist = iLen - 12;
-
+            // อัปเดตพิกัดเรือ
             shipGroup.position.x = -iBase + (shipDist * Math.cos(angle));
-            shipGroup.position.y = 5 + (shipDist * Math.sin(angle));
-            for(let i=0; i<6; i++) if(mPs[i]) mPs[i].position.y = (iHeight + 10 + i*3.5) - (shipDist / Math.pow(2, 6-i));
-            if(wGroup && acc > 0) wGroup.rotation.y += acc * dt * 0.2;
+            shipGroup.position.y = 6 + (shipDist * Math.sin(angle)); // 6 คือความสูงท่าเรือ
+            
+            // อัปเดตรอกเคลื่อนที่ (วิ่งขึ้นลงตามสัดส่วน)
+            for(let i=0; i<6; i++) {
+                if(mPs[i]) {
+                    mPs[i].position.y = (iHeight + 12 + i*3.5) - (shipDist / Math.pow(2, 6-i));
+                    // ทำให้รอกเคลื่อนที่หมุนตามเชือกสมจริง!
+                    mPs[i].rotation.z -= (shipVelocity * dt * 0.5); 
+                }
+            }
+            
+            // รอกตายตัวก็หมุน
+            fpInc.rotation.z -= (shipVelocity * dt * 0.8);
+            fpRight.rotation.z -= (shipVelocity * dt * 0.2);
+
+            // ล้อและเพลาหมุนติ้ว! (หมุนเร็วมากเพราะทดรอบ x64)
+            if(wGroup) {
+                wGroup.rotation.y -= (shipVelocity * dt * 1.5);
+            }
         }
 
+        // 8. Animation Loop
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
-            const dt = Math.min(clock.getDelta(), 0.1);
+            // จำกัด dt ไม่ให้ฟิสิกส์หลุดกรอบถ้าจอค้าง
+            const dt = Math.min(clock.getDelta(), 0.05); 
             controls.update();
             
+            // อนิเมชันผิวน้ำอลังการ
             if(sea.geometry.attributes.position) {
                 const time = Date.now() * 0.0015;
                 const pos = sea.geometry.attributes.position.array;
-                for(let i=0; i<pos.length; i+=3) pos[i+2] = Math.sin(pos[i]*0.05 + time)*0.6 + Math.cos(pos[i+1]*0.05 + time)*0.6;
+                for(let i=0; i<pos.length; i+=3) {
+                    pos[i+2] = Math.sin(pos[i]*0.05 + time)*0.7 + Math.cos(pos[i+1]*0.05 + time)*0.7;
+                }
                 sea.geometry.attributes.position.needsUpdate = true;
             }
 
-            updatePhysics(dt); updateRopes(); renderer.render(scene, camera);
+            // เรดาร์หมุนตลอดเวลา
+            radarAntenna.rotation.y += 2 * dt;
+
+            updatePhysics(dt); 
+            updateRopes(); 
+            
+            renderer.render(scene, camera);
         }
         animate();
 
-        window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+        window.addEventListener('resize', () => { 
+            camera.aspect = window.innerWidth/window.innerHeight; 
+            camera.updateProjectionMatrix(); 
+            renderer.setSize(window.innerWidth, window.innerHeight); 
+        });
     </script>
 </body>
 </html>
