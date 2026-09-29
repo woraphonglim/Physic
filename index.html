@@ -3,28 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Landbridge Simulator - Ultimate Physics</title>
+    <title>Landbridge Simulator - Friction Engine</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #87ceeb; font-family: 'Segoe UI', Tahoma, sans-serif; touch-action: none; }
         #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
         
         #ui-panel {
             position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(255, 255, 255, 0.95);
-            padding: 20px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 330px;
+            padding: 20px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 340px;
             backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.8);
         }
         h2 { margin: 0 0 15px 0; color: #0f172a; font-size: 22px; border-bottom: 3px solid #38bdf8; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-        .control-group { margin-bottom: 18px; }
+        .control-group { margin-bottom: 15px; }
         label { display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; color: #1e293b; margin-bottom: 8px; }
         input[type=range] { width: 100%; accent-color: #0284c7; height: 6px; border-radius: 5px; outline: none; }
         
-        .calc-box { background: #f8fafc; border-radius: 10px; padding: 15px; font-family: 'Courier New', monospace; font-size: 13px; color: #334155; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .calc-box { background: #f8fafc; border-radius: 10px; padding: 15px; font-family: 'Courier New', monospace; font-size: 12px; color: #334155; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
         .calc-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
         .calc-total { font-weight: bold; color: #dc2626; border-top: 2px dashed #cbd5e1; padding-top: 8px; margin-top: 6px; }
         
         button {
             width: 100%; padding: 16px; background: linear-gradient(135deg, #0284c7, #1d4ed8); color: white; border: none; border-radius: 10px;
-            font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 20px; touch-action: none;
+            font-weight: 800; font-size: 16px; cursor: pointer; margin-top: 15px; touch-action: none;
             box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); text-transform: uppercase; transition: all 0.2s;
         }
         button:active { transform: scale(0.96); box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4); }
@@ -37,7 +37,7 @@
     <div id="canvas-container"></div>
     
     <div id="ui-panel">
-        <h2>Physics Engine 🚤</h2>
+        <h2>Physics Engine v6 (Friction)</h2>
         <div class="control-group">
             <label>มวลเรือ (m) <span id="massVal">100 kg</span></label>
             <input type="range" id="massSlider" min="50" max="2000" step="10" value="100">
@@ -49,41 +49,36 @@
         
         <div class="calc-box">
             <div class="calc-row"><span>T เพลา (4F):</span> <span id="c_t1">0 N</span></div>
-            <div class="calc-row"><span>ตัวคูณรอก:</span> <span>x 64</span></div>
-            <div class="calc-row calc-total"><span>T_pull:</span> <span id="c_tpull">0 N</span></div>
+            <div class="calc-row"><span>T_pull (x64):</span> <span id="c_tpull" style="font-weight:bold;">0 N</span></div>
             <div class="calc-row"><span>W (mg sin30):</span> <span id="c_w">490 N</span></div>
+            <div class="calc-row"><span>f เสียดทาน (μ=0.5):</span> <span id="c_f" style="color:#d97706;">424 N</span></div>
             <div class="calc-row"><span>ความเร่ง (a):</span> <span id="c_acc">0.0 m/s²</span></div>
             <div class="calc-row calc-total" style="color:#0f172a;"><span>สถานะ:</span> <span id="c_status">ปล่อยอิสระ</span></div>
         </div>
-        <button id="pullBtn">กดค้างเพื่อออกแรงดึง F</button>
+        <button id="pullBtn">กดค้างเพื่อดึงเชือก</button>
     </div>
     
     <div class="instruction">👈 ลากนิ้วหมุนกล้อง | 🤏 กางนิ้วซูม</div>
 
     <script>
-        // 1. Setup Scene
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb); 
         scene.fog = new THREE.FogExp2(0x87ceeb, 0.002);
 
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.set(-50, 30, 80);
+        camera.position.set(-50, 30, 90);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.target.set(15, 15, 0);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
         controls.maxPolarAngle = Math.PI / 2 + 0.1; 
 
-        // 2. Lighting (จัดแสง)
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
         
@@ -104,7 +99,6 @@
         sunSphere.position.copy(sunLight.position);
         scene.add(sunSphere);
 
-        // 3. Environment & Decorations
         const seaGeo = new THREE.PlaneGeometry(1000, 1000, 128, 128);
         const seaMat = new THREE.MeshStandardMaterial({ 
             color: 0x005b96, transparent: true, opacity: 0.85, 
@@ -129,6 +123,17 @@
             scene.add(rock);
         }
 
+        const birds = new THREE.Group();
+        const birdGeo = new THREE.ConeGeometry(0.4, 1.5, 4);
+        birdGeo.rotateX(Math.PI/2);
+        const birdMat = new THREE.MeshBasicMaterial({color: 0x222222});
+        for(let i=0; i<6; i++) {
+            const bird = new THREE.Mesh(birdGeo, birdMat);
+            bird.position.set((Math.random()-0.5)*100, 45 + Math.random()*20, (Math.random()-0.5)*50 - 20);
+            birds.add(bird);
+        }
+        scene.add(birds);
+
         const angle = 30 * Math.PI / 180;
         const iLen = 60; 
         const iHeight = iLen * Math.sin(angle); 
@@ -141,7 +146,6 @@
         incline.receiveShadow = true;
         scene.add(incline);
 
-        // 4. เรือสินค้า
         const shipGroup = new THREE.Group();
         
         const hull = new THREE.Mesh(new THREE.BoxGeometry(11, 4, 18), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
@@ -171,7 +175,6 @@
         shipGroup.rotation.z = angle;
         scene.add(shipGroup);
 
-        // 5. ระบบรอกและเพลา (Realistic Pulleys)
         const pulleys = [];
         const pRadius = 1.8;
         const pMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.7, roughness: 0.3 });
@@ -182,15 +185,12 @@
             const wheel = new THREE.Mesh(new THREE.CylinderGeometry(pRadius, pRadius, 1.2, 32), pMat);
             wheel.rotation.x = Math.PI / 2;
             group.add(wheel);
-
             const spoke1 = new THREE.Mesh(new THREE.BoxGeometry(pRadius * 2.1, 1.4, 0.4), spokeMat);
             const spoke2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.4, pRadius * 2.1), spokeMat);
             group.add(spoke1, spoke2);
-
             const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.8, 16), new THREE.MeshStandardMaterial({ color: 0x000000 }));
             pin.rotation.x = Math.PI / 2;
             group.add(pin);
-
             group.position.set(x, y, z);
             group.traverse(child => { if(child.isMesh) { child.castShadow = true; } });
             scene.add(group);
@@ -199,20 +199,21 @@
         }
 
         const ceiling = new THREE.Mesh(new THREE.BoxGeometry(32, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.5 }));
-        ceiling.position.set(22, iHeight + 42, 0); ceiling.castShadow = true; scene.add(ceiling);
+        ceiling.position.set(22, iHeight + 48, 0); ceiling.castShadow = true; scene.add(ceiling);
 
         const fpInc = createRealisticPulley(0, iHeight + 6 + pRadius, 0);
         const mPs = [];
-        for(let i=0; i<6; i++) mPs.push(createRealisticPulley(12 + i*2.8, iHeight + 12 + i*3.5, 0));
-        const fpRight = createRealisticPulley(33, iHeight + 40, 0);
+        for(let i=0; i<6; i++) {
+            mPs.push(createRealisticPulley(12 + i*3.5, iHeight + 5 + i*5, 0));
+        }
+        const fpRight = createRealisticPulley(35, iHeight + 44, 0);
 
-        // ล้อใหญ่ 12 ซม. และเพลา 3 ซม. 
         const wGroup = new THREE.Group();
         const mainWheel = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.6, 32), new THREE.MeshStandardMaterial({ color: 0x047857 }));
         const mainSpoke1 = new THREE.Mesh(new THREE.BoxGeometry(12.2, 0.8, 0.4), spokeMat);
         const mainSpoke2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 12.2), spokeMat);
         mainWheel.add(mainSpoke1, mainSpoke2);
-        mainWheel.rotation.x = Math.PI / 2; // ทำให้หน้าตัดวงกลมหันออกแกน Z
+        mainWheel.rotation.x = Math.PI / 2; 
 
         const mainAxle = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.5, 32), new THREE.MeshStandardMaterial({ color: 0x334155 }));
         const axleSpoke = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.7, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff }));
@@ -220,16 +221,14 @@
         mainAxle.rotation.x = Math.PI / 2;
 
         wGroup.add(mainWheel, mainAxle);
-        wGroup.position.set(33, iHeight + 18, 0);
+        wGroup.position.set(35, iHeight + 20, 0);
         wGroup.traverse(child => { if(child.isMesh) { child.castShadow = true; } });
         scene.add(wGroup);
 
-        // ด้ามจับ (Handle) สำหรับดึงเชือกล้อใหญ่
         const pullHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 3, 16), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
         pullHandle.rotation.z = Math.PI / 2;
         scene.add(pullHandle);
 
-        // 6. ระบบเชือก (Ropes)
         const ropes = [];
         const ropeMat = new THREE.LineBasicMaterial({ color: 0x111111, linewidth: 3 });
         for(let i=0; i<20; i++) { 
@@ -241,7 +240,6 @@
             let rIdx = 0;
             const setR = (p1, p2) => { if(ropes[rIdx] && p1 && p2) { ropes[rIdx].geometry.setFromPoints([p1, p2]); rIdx++; } };
             
-            // เชือกหลักจากเรือ
             setR(shipGroup.position, new THREE.Vector3(fpInc.position.x - pRadius, fpInc.position.y, 0));
             setR(new THREE.Vector3(fpInc.position.x + pRadius, fpInc.position.y, 0), mPs[0].position);
             
@@ -252,23 +250,20 @@
             
             setR(new THREE.Vector3(mPs[5].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[5].position.x - pRadius, mPs[5].position.y, 0));
             setR(new THREE.Vector3(mPs[5].position.x + pRadius, mPs[5].position.y, 0), new THREE.Vector3(fpRight.position.x - pRadius, fpRight.position.y, 0));
-            
-            // เชือกจากรอกขวาเข้า "เพลา"
             setR(new THREE.Vector3(fpRight.position.x + pRadius, fpRight.position.y, 0), new THREE.Vector3(wGroup.position.x - 1.5, wGroup.position.y, 0));
             
-            // เชือกสำหรับดึงที่ห้อยจาก "ล้อวงนอก" (ฝั่งขวาของล้อ รัศมี 6)
             let handY = wGroup.position.y - 12;
-            if (isPulling) { handY -= 2; } // กดย่อลงนิดนึงเพื่อแสดงว่ามีคนกำลังดึง
+            if (isPulling) { handY -= 2; } 
             
             setR(new THREE.Vector3(wGroup.position.x + 6, wGroup.position.y, 0), new THREE.Vector3(wGroup.position.x + 6, handY, 0));
-            pullHandle.position.set(wGroup.position.x + 6, handY, 0); // ผูกที่จับเข้ากับปลายเชือก
+            pullHandle.position.set(wGroup.position.x + 6, handY, 0); 
 
             for(let i=rIdx; i<ropes.length; i++) ropes[i].geometry.setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
         }
 
-        // 7. ฟิสิกส์จลนศาสตร์
         const GRAVITY = 9.8;
-        let shipDist = iLen / 2.5; 
+        const MU = 0.5; // สัมประสิทธิ์ความเสียดทาน
+        let shipDist = iLen / 2.2; 
         let shipVelocity = 0; 
         let isPulling = false;
         
@@ -287,14 +282,45 @@
             const T_axle = 4 * F; 
             let T_pull = isPulling ? (T_axle * 64) : 0; 
             
-            const W_p = m * GRAVITY * Math.sin(angle); 
-            const netForce = T_pull - W_p;
+            const W_p = m * GRAVITY * Math.sin(angle); // แรงถ่วงลง (mg sin 30)
+            const N_force = m * GRAVITY * Math.cos(angle); // แรงแนวฉาก (mg cos 30)
+            const f_k = MU * N_force; // แรงเสียดทานจลน์ (f = μN)
             
+            let netForceNoFriction = T_pull - W_p;
+            let netForce = 0;
+
+            // คำนวณทิศทางแรงเสียดทานต้านการเคลื่อนที่
+            if (Math.abs(shipVelocity) > 0.05) { 
+                if (shipVelocity > 0) {
+                    netForce = netForceNoFriction - f_k; // ขยับขึ้น แรงเสียดทานกดลง
+                } else {
+                    netForce = netForceNoFriction + f_k; // ขยับลง แรงเสียดทานช่วยดึงขึ้น
+                }
+            } else {
+                // กรณีหยุดนิ่ง (ตรวจสอบ Static Friction)
+                if (netForceNoFriction > f_k) {
+                    netForce = netForceNoFriction - f_k; // ดึงชนะแรงต้าน
+                } else if (netForceNoFriction < -f_k) {
+                    netForce = netForceNoFriction + f_k; // น้ำหนักไหลชนะแรงต้าน
+                } else {
+                    netForce = 0; // ค้างอยู่กับที่
+                    shipVelocity = 0;
+                }
+            }
+
             const acc = netForce / m;
-            shipVelocity += acc * dt;
+            
+            // ป้องกันเรือสั่นเมื่อความเร็วเปลี่ยนทิศทางในเฟรมเดียว (Jitter fix)
+            const newVelocity = shipVelocity + (acc * dt);
+            if ((shipVelocity > 0 && newVelocity < 0) || (shipVelocity < 0 && newVelocity > 0)) {
+                shipVelocity = 0;
+            } else {
+                shipVelocity = newVelocity;
+            }
+
             shipDist += shipVelocity * dt;
 
-            // ขอบเขตล่างและบน
+            // ขอบเขต
             if (shipDist <= 0) {
                 shipDist = 0;
                 if (shipVelocity < 0) shipVelocity = 0; 
@@ -306,45 +332,36 @@
             let stat = "หยุดนิ่ง";
             let col = "#475569";
 
-            if (shipDist <= 0 && netForce <= 0) {
-                stat = "ตกถึงพื้นแล้ว";
-            } else if (shipDist >= iLen - 12 && netForce >= 0) {
-                stat = "ดึงถึงยอดแล้ว";
-            } else if (shipVelocity > 0.1) {
-                stat = "กำลังขึ้น ↑"; col = "#15803d"; 
-            } else if (shipVelocity < -0.1) {
-                stat = "กำลังไหลลง ↓"; col = "#dc2626"; 
-            }
+            if (shipDist <= 0 && netForce <= 0) stat = "ตกถึงพื้นแล้ว";
+            else if (shipDist >= iLen - 12 && netForce >= 0) stat = "ดึงถึงยอดแล้ว";
+            else if (shipVelocity > 0.01) { stat = "กำลังขึ้น ↑"; col = "#15803d"; } 
+            else if (shipVelocity < -0.01) { stat = "กำลังไหลลง ↓"; col = "#dc2626"; }
 
+            // อัปเดตข้อมูลบนหน้าจอ
             document.getElementById('c_t1').innerText = `${T_axle.toFixed(0)} N`;
             document.getElementById('c_tpull').innerText = `${T_pull.toFixed(0)} N`;
             document.getElementById('c_w').innerText = `${W_p.toFixed(0)} N`;
+            document.getElementById('c_f').innerText = `${f_k.toFixed(0)} N`;
             document.getElementById('c_acc').innerText = `${acc.toFixed(2)} m/s²`;
             
             document.getElementById('c_status').innerText = stat; 
             document.getElementById('c_status').style.color = col;
 
-            // อัปเดตพิกัดเรือ
             shipGroup.position.x = -iBase + (shipDist * Math.cos(angle));
             shipGroup.position.y = 6 + (shipDist * Math.sin(angle));
             
-            // หมุนรอก
             for(let i=0; i<6; i++) {
                 if(mPs[i]) {
-                    mPs[i].position.y = (iHeight + 12 + i*3.5) - (shipDist / Math.pow(2, 6-i));
-                    mPs[i].rotation.z -= (shipVelocity * dt * 0.5); 
+                    const moveUp = shipDist * 0.3 * ((i+1)/6); 
+                    mPs[i].position.y = (iHeight + 5 + i*5) + moveUp;
+                    mPs[i].rotation.z += (shipVelocity * dt * 0.5); 
                 }
             }
             fpInc.rotation.z -= (shipVelocity * dt * 0.8);
-            fpRight.rotation.z -= (shipVelocity * dt * 0.2);
-
-            // หมุนแกนล้อและเพลาเป็นแกน Z ให้กลิ้งแบบเดียวกับรอก
-            if(wGroup) {
-                wGroup.rotation.z -= (shipVelocity * dt * 1.5);
-            }
+            fpRight.rotation.z -= (shipVelocity * dt * 0.4);
+            if(wGroup) wGroup.rotation.z -= (shipVelocity * dt * 1.5);
         }
 
-        // 8. Animation Loop
         const clock = new THREE.Clock();
         function animate() {
             requestAnimationFrame(animate);
@@ -354,17 +371,19 @@
             if(sea.geometry.attributes.position) {
                 const time = Date.now() * 0.0015;
                 const pos = sea.geometry.attributes.position.array;
-                for(let i=0; i<pos.length; i+=3) {
-                    pos[i+2] = Math.sin(pos[i]*0.05 + time)*0.7 + Math.cos(pos[i+1]*0.05 + time)*0.7;
-                }
+                for(let i=0; i<pos.length; i+=3) pos[i+2] = Math.sin(pos[i]*0.05 + time)*0.7 + Math.cos(pos[i+1]*0.05 + time)*0.7;
                 sea.geometry.attributes.position.needsUpdate = true;
             }
 
+            birds.children.forEach(b => {
+                b.position.x += 15 * dt;
+                if(b.position.x > 100) b.position.x = -100;
+                b.position.y += Math.sin(Date.now()*0.005 + b.position.x)*0.03;
+            });
             radarAntenna.rotation.y += 2 * dt;
 
             updatePhysics(dt); 
             updateRopes(); 
-            
             renderer.render(scene, camera);
         }
         animate();
