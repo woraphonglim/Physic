@@ -29,9 +29,9 @@
         button:active { transform: scale(0.97); }
         .instruction { position: absolute; bottom: 20px; right: 20px; z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 10px 15px; border-radius: 20px; font-size: 12px; }
     </style>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- ใช้ลิงก์ชุดเดิมที่เคยเปิดติดบนไอแพดของคุณ -->
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
     <div id="error-log"></div>
@@ -61,6 +61,7 @@
     <div class="instruction">ใช้นิ้วลาก: หมุน | กางนิ้ว: ซูม</div>
 
     <script>
+        // ระบบดักจับ Error บนหน้าจอ
         window.onerror = function(msg, url, line) {
             const errLog = document.getElementById('error-log');
             errLog.innerHTML += "ERROR: " + msg + " (Line: " + line + ")<br>";
@@ -89,6 +90,7 @@
         dirLight.castShadow = true;
         scene.add(dirLight);
 
+        // ฉากพื้นทะเลและท่าเรือ
         const seaGeo = new THREE.PlaneGeometry(800, 800, 32, 32);
         const sea = new THREE.Mesh(seaGeo, new THREE.MeshStandardMaterial({ color: 0x0284c7, transparent: true, opacity: 0.85, roughness: 0.1 }));
         sea.rotation.x = -Math.PI / 2;
@@ -99,6 +101,7 @@
         pier.receiveShadow = true;
         scene.add(pier);
 
+        // พื้นเอียง
         const angle = 30 * Math.PI / 180;
         const iLen = 55;
         const iHeight = iLen * Math.sin(angle); 
@@ -111,6 +114,7 @@
         incline.receiveShadow = true;
         scene.add(incline);
 
+        // โมเดลเรือ
         const shipGroup = new THREE.Group();
         const hull = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 16), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
         hull.position.y = 2; hull.castShadow = true; shipGroup.add(hull);
@@ -119,6 +123,7 @@
         shipGroup.rotation.z = angle;
         scene.add(shipGroup);
 
+        // ระบบรอก
         const pulleys = [];
         const pRadius = 1.8;
         const pMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6 });
@@ -133,11 +138,13 @@
         for(let i=0; i<6; i++) mPs.push(mkP(12 + i*2.8, iHeight + 10 + i*3.5, 0));
         const fpRight = mkP(32, iHeight + 38, 0);
 
+        // ล้อ (12) และ เพลา (3)
         const wGroup = new THREE.Group();
         wGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.6, 32), new THREE.MeshStandardMaterial({ color: 0x0f766e }))); 
         wGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.5, 32), new THREE.MeshStandardMaterial({ color: 0x334155 }))); 
         wGroup.rotation.x = Math.PI/2; wGroup.position.set(32, iHeight + 18, 0); scene.add(wGroup);
 
+        // ระบบเชือก
         const ropes = [];
         const ropeMat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
         for(let i=0; i<20; i++) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), ropeMat); scene.add(l); ropes.push(l); }
@@ -157,6 +164,7 @@
             for(let i=rIdx; i<ropes.length; i++) ropes[i].geometry.setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
         }
 
+        // ระบบฟิสิกส์และการกดดึงเชือก
         const GRAVITY = 9.8;
         let shipDist = 0; let isPulling = false;
         
