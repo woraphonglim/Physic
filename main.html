@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Landbridge Physics Simulator - 256F</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #4fb9e8; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: none; }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        #error-log { position: absolute; top: 0; left: 0; width: 100%; background: red; color: white; padding: 15px; z-index: 9999; display: none; font-weight: bold; }
+        
+        #ui-panel {
+            position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(255, 255, 255, 0.95);
+            padding: 20px; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); width: 320px;
+        }
+        h2 { margin: 0 0 15px 0; color: #0f172a; font-size: 20px; border-bottom: 2px solid #cbd5e1; padding-bottom: 10px; }
+        .control-group { margin-bottom: 15px; }
+        label { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; color: #334155; margin-bottom: 8px; }
+        input[type=range] { width: 100%; accent-color: #0284c7; }
+        
+        .calc-box { background: #f1f5f9; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 13px; color: #475569; }
+        .calc-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .calc-total { font-weight: bold; color: #b91c1c; border-top: 1px dashed #94a3b8; padding-top: 6px; margin-top: 4px; }
+        
+        button {
+            width: 100%; padding: 14px; background: #0284c7; color: white; border: none; border-radius: 8px;
+            font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 15px; touch-action: none;
+        }
+        button:active { transform: scale(0.97); }
+        .instruction { position: absolute; bottom: 20px; right: 20px; z-index: 10; background: rgba(0,0,0,0.7); color: white; padding: 10px 15px; border-radius: 20px; font-size: 12px; }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div id="error-log"></div>
+    <div id="canvas-container"></div>
+    
+    <div id="ui-panel">
+        <h2>Landbridge System (256F)</h2>
+        <div class="control-group">
+            <label>มวลเรือ (m) <span id="massVal">500 kg</span></label>
+            <input type="range" id="massSlider" min="100" max="2000" step="50" value="500">
+        </div>
+        <div class="control-group">
+            <label>แรงดึงเพลา (F) <span id="forceVal">10 N</span></label>
+            <input type="range" id="forceSlider" min="0" max="100" step="1" value="10">
+        </div>
+        
+        <div class="calc-box">
+            <div class="calc-row"><span>ล้อ/เพลา (12:3):</span> <span id="c_t1">T = 4F</span></div>
+            <div class="calc-row"><span>รอก 6 ตัว (2^6):</span> <span>x 64</span></div>
+            <div class="calc-row calc-total"><span>แรงดึงรวม (T_pull):</span> <span id="c_tpull">2560 N</span></div>
+            <div class="calc-row"><span>น้ำหนักถ่วง (mg sin30):</span> <span id="c_w">2450 N</span></div>
+            <div class="calc-row calc-total" style="color:#0f172a;"><span>สถานะ:</span> <span id="c_status">ดึงขึ้น</span></div>
+        </div>
+        <button id="pullBtn">กดค้างเพื่อดึงเรือ</button>
+    </div>
+    
+    <div class="instruction">ใช้นิ้วลาก: หมุน | กางนิ้ว: ซูม</div>
+
+    <script>
+        window.onerror = function(msg, url, line) {
+            const errLog = document.getElementById('error-log');
+            errLog.innerHTML += "ERROR: " + msg + " (Line: " + line + ")<br>";
+            errLog.style.display = 'block';
+        };
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x60a5fa);
+        scene.fog = new THREE.FogExp2(0x60a5fa, 0.003);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1500);
+        camera.position.set(-40, 25, 70);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(10, 10, 0);
+        controls.enableDamping = true;
+
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
+        const dirLight = new THREE.DirectionalLight(0xfff5b6, 1.2);
+        dirLight.position.set(60, 100, 40);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+
+        const seaGeo = new THREE.PlaneGeometry(800, 800, 32, 32);
+        const sea = new THREE.Mesh(seaGeo, new THREE.MeshStandardMaterial({ color: 0x0284c7, transparent: true, opacity: 0.85, roughness: 0.1 }));
+        sea.rotation.x = -Math.PI / 2;
+        scene.add(sea);
+
+        const pier = new THREE.Mesh(new THREE.BoxGeometry(100, 5, 45), new THREE.MeshStandardMaterial({ color: 0x94a3b8 }));
+        pier.position.set(0, 2.5, -22.5);
+        pier.receiveShadow = true;
+        scene.add(pier);
+
+        const angle = 30 * Math.PI / 180;
+        const iLen = 55;
+        const iHeight = iLen * Math.sin(angle); 
+        const iBase = iLen * Math.cos(angle);   
+
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0); shape.lineTo(-iBase, 0); shape.lineTo(0, iHeight); shape.lineTo(0, 0);
+        const incline = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 15, bevelEnabled: false }), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+        incline.position.set(0, 5, -7.5);
+        incline.receiveShadow = true;
+        scene.add(incline);
+
+        const shipGroup = new THREE.Group();
+        const hull = new THREE.Mesh(new THREE.BoxGeometry(10, 4, 16), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
+        hull.position.y = 2; hull.castShadow = true; shipGroup.add(hull);
+        const cabin = new THREE.Mesh(new THREE.BoxGeometry(8, 3, 5), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        cabin.position.set(0, 5.5, -4); cabin.castShadow = true; shipGroup.add(cabin);
+        shipGroup.rotation.z = angle;
+        scene.add(shipGroup);
+
+        const pulleys = [];
+        const pRadius = 1.8;
+        const pMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6 });
+        const pGeo = new THREE.CylinderGeometry(pRadius, pRadius, 1.2, 32);
+        function mkP(x, y, z) { const p = new THREE.Mesh(pGeo, pMat); p.rotation.x = Math.PI/2; p.position.set(x, y, z); p.castShadow = true; scene.add(p); pulleys.push(p); return p; }
+
+        const ceiling = new THREE.Mesh(new THREE.BoxGeometry(30, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+        ceiling.position.set(22, iHeight + 40, 0); scene.add(ceiling);
+
+        const fpInc = mkP(0, iHeight + 5 + pRadius, 0);
+        const mPs = [];
+        for(let i=0; i<6; i++) mPs.push(mkP(12 + i*2.8, iHeight + 10 + i*3.5, 0));
+        const fpRight = mkP(32, iHeight + 38, 0);
+
+        const wGroup = new THREE.Group();
+        wGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 0.6, 32), new THREE.MeshStandardMaterial({ color: 0x0f766e }))); 
+        wGroup.add(new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.5, 32), new THREE.MeshStandardMaterial({ color: 0x334155 }))); 
+        wGroup.rotation.x = Math.PI/2; wGroup.position.set(32, iHeight + 18, 0); scene.add(wGroup);
+
+        const ropes = [];
+        const ropeMat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+        for(let i=0; i<20; i++) { const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), ropeMat); scene.add(l); ropes.push(l); }
+
+        function updateRopes() {
+            let rIdx = 0;
+            const setR = (p1, p2) => { if(ropes[rIdx] && p1 && p2) { ropes[rIdx].geometry.setFromPoints([p1, p2]); rIdx++; } };
+            setR(shipGroup.position, new THREE.Vector3(fpInc.position.x - pRadius, fpInc.position.y, 0));
+            setR(new THREE.Vector3(fpInc.position.x + pRadius, fpInc.position.y, 0), mPs[0].position);
+            for(let i=0; i<5; i++) {
+                setR(new THREE.Vector3(mPs[i].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[i].position.x - pRadius, mPs[i].position.y, 0));
+                setR(new THREE.Vector3(mPs[i].position.x + pRadius, mPs[i].position.y, 0), mPs[i+1].position);
+            }
+            setR(new THREE.Vector3(mPs[5].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[5].position.x - pRadius, mPs[5].position.y, 0));
+            setR(new THREE.Vector3(mPs[5].position.x + pRadius, mPs[5].position.y, 0), new THREE.Vector3(fpRight.position.x - pRadius, fpRight.position.y, 0));
+            setR(new THREE.Vector3(fpRight.position.x + pRadius, fpRight.position.y, 0), new THREE.Vector3(wGroup.position.x - 1.5, wGroup.position.y, 0));
+            for(let i=rIdx; i<ropes.length; i++) ropes[i].geometry.setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        }
+
+        const GRAVITY = 9.8;
+        let shipDist = 0; let isPulling = false;
+        
+        const btn = document.getElementById('pullBtn');
+        btn.addEventListener('mousedown', () => isPulling = true); btn.addEventListener('mouseup', () => isPulling = false);
+        btn.addEventListener('mouseleave', () => isPulling = false);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); isPulling = true; }, {passive: false});
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); isPulling = false; }, {passive: false});
+
+        function updatePhysics(dt) {
+            const m = parseFloat(document.getElementById('massSlider').value);
+            const F = parseFloat(document.getElementById('forceSlider').value);
+            document.getElementById('massVal').innerText = m + ' kg';
+            document.getElementById('forceVal').innerText = F + ' N';
+
+            const T_axle = 4 * F; let T_pull = T_axle * 64; if(!isPulling) T_pull = 0;
+            const W_p = m * GRAVITY * Math.sin(angle); const net = T_pull - W_p;
+            
+            let acc = 0, stat = "หยุดนิ่ง (ล็อก)", col = "#475569";
+            if(isPulling && net > 0) { acc = net/m; stat = "เรือขยับขึ้น"; col = "#15803d"; }
+            else if(isPulling && net <= 0) { stat = "แรงดึงไม่พอ"; col = "#b91c1c"; }
+
+            document.getElementById('c_t1').innerText = `T = ${T_axle.toFixed(0)} N`;
+            document.getElementById('c_tpull').innerText = `${T_pull.toFixed(0)} N`;
+            document.getElementById('c_w').innerText = `${W_p.toFixed(0)} N`;
+            document.getElementById('c_status').innerText = stat; document.getElementById('c_status').style.color = col;
+
+            shipDist += (acc * dt * 0.5); if(shipDist > iLen - 12) shipDist = iLen - 12;
+
+            shipGroup.position.x = -iBase + (shipDist * Math.cos(angle));
+            shipGroup.position.y = 5 + (shipDist * Math.sin(angle));
+            for(let i=0; i<6; i++) if(mPs[i]) mPs[i].position.y = (iHeight + 10 + i*3.5) - (shipDist / Math.pow(2, 6-i));
+            if(wGroup && acc > 0) wGroup.rotation.y += acc * dt * 0.2;
+        }
+
+        const clock = new THREE.Clock();
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+            controls.update();
+            
+            if(sea.geometry.attributes.position) {
+                const time = Date.now() * 0.0015;
+                const pos = sea.geometry.attributes.position.array;
+                for(let i=0; i<pos.length; i+=3) pos[i+2] = Math.sin(pos[i]*0.05 + time)*0.6 + Math.cos(pos[i+1]*0.05 + time)*0.6;
+                sea.geometry.attributes.position.needsUpdate = true;
+            }
+
+            updatePhysics(dt); updateRopes(); renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => { camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+    </script>
+</body>
+</html>
