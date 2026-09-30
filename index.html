@@ -81,7 +81,7 @@
 
     <div id="ui-panel">
         <div class="panel-head">
-            <h2>⚓ ท่าเรือชายฝั่ง<small>ลากเรือสินค้าขึ้นสลิปเวย์ · Physics Engine</small></h2>
+            <h2>⚓ ท่าเรือชายฝั่ง<small>ลากเรือสินค้าขึ้นสลิปเวย์ · Physics Engine v6 (Friction)</small></h2>
             <button id="togglePanel" aria-label="ย่อหรือขยายแผงควบคุม">–</button>
         </div>
         <div id="panel-body">
@@ -96,7 +96,7 @@
 
             <div class="calc-box">
                 <div class="calc-row"><span>T เพลา (4F):</span> <span id="c_t1">0 N</span></div>
-                <div class="calc-row"><span>T_pull (x64):</span> <span id="c_tpull" style="font-weight:bold;">0 N</span></div>
+                <div class="calc-row"><span>T_pull (x32):</span> <span id="c_tpull" style="font-weight:bold;">0 N</span></div>
                 <div class="calc-row"><span>W (mg sin30):</span> <span id="c_w">490 N</span></div>
                 <div class="calc-row"><span>f เสียดทาน (μ=0.5):</span> <span id="c_f" style="color:#d97706;">424 N</span></div>
                 <div class="calc-row"><span>ความเร่ง (a):</span> <span id="c_acc">0.0 m/s²</span></div>
@@ -924,7 +924,7 @@
 
         const fpInc = createRealisticPulley(0, iHeight + 6 + pRadius, 0);
         const mPs = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 5; i++) {
             mPs.push(createRealisticPulley(12 + i * 3.5, iHeight + 5 + i * 5, 0));
         }
         const fpRight = createRealisticPulley(35, iHeight + 44, 0);
@@ -964,13 +964,13 @@
             setR(shipGroup.position, new THREE.Vector3(fpInc.position.x - pRadius, fpInc.position.y, 0));
             setR(new THREE.Vector3(fpInc.position.x + pRadius, fpInc.position.y, 0), mPs[0].position);
 
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 4; i++) {
                 setR(new THREE.Vector3(mPs[i].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[i].position.x - pRadius, mPs[i].position.y, 0));
                 setR(new THREE.Vector3(mPs[i].position.x + pRadius, mPs[i].position.y, 0), mPs[i + 1].position);
             }
 
-            setR(new THREE.Vector3(mPs[5].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[5].position.x - pRadius, mPs[5].position.y, 0));
-            setR(new THREE.Vector3(mPs[5].position.x + pRadius, mPs[5].position.y, 0), new THREE.Vector3(fpRight.position.x - pRadius, fpRight.position.y, 0));
+            setR(new THREE.Vector3(mPs[4].position.x - pRadius, ceiling.position.y, 0), new THREE.Vector3(mPs[4].position.x - pRadius, mPs[4].position.y, 0));
+            setR(new THREE.Vector3(mPs[4].position.x + pRadius, mPs[4].position.y, 0), new THREE.Vector3(fpRight.position.x - pRadius, fpRight.position.y, 0));
             setR(new THREE.Vector3(fpRight.position.x + pRadius, fpRight.position.y, 0), new THREE.Vector3(wGroup.position.x - 1.5, wGroup.position.y, 0));
 
             let handY = wGroup.position.y - 12;
@@ -1012,7 +1012,7 @@
             document.getElementById('forceVal').innerText = F + ' N';
 
             const T_axle = 4 * F;
-            let T_pull = isPulling ? (T_axle * 64) : 0;
+            let T_pull = isPulling ? (T_axle * 32) : 0;
 
             const W_p = m * GRAVITY * Math.sin(angle); // แรงถ่วงลง (mg sin 30)
             const N_force = m * GRAVITY * Math.cos(angle); // แรงแนวฉาก (mg cos 30)
@@ -1082,9 +1082,9 @@
             shipGroup.position.x = -iBase + (shipDist * Math.cos(angle));
             shipGroup.position.y = 6 + (shipDist * Math.sin(angle));
 
-            for (let i = 0; i < 6; i++) {
+            for (let i = 0; i < 5; i++) {
                 if (mPs[i]) {
-                    const moveUp = shipDist * 0.3 * ((i + 1) / 6);
+                    const moveUp = shipDist * 0.3 * ((i + 1) / 5);
                     mPs[i].position.y = (iHeight + 5 + i * 5) + moveUp;
                     mPs[i].rotation.z += (shipVelocity * dt * 0.5);
                 }
